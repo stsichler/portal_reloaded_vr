@@ -61,6 +61,13 @@ enum RenderViewInfo_t
 	RENDERVIEW_SUPPRESSMONITORRENDERING = (1 << 2),
 };
 
+struct Rect_t
+{
+	int x, y;
+	int width, height;
+};
+
+
 struct vrect_t
 {
 	int				x, y, width, height;
@@ -954,12 +961,12 @@ public:
 	virtual void DrawScreenSpaceRectangle() = 0;
 	virtual void sub_10027EA0() = 0;
 	virtual void PushRenderTargetAndViewport() = 0;
-	virtual void sub_100174B0() = 0;
-	virtual void sub_10017580() = 0;
-	virtual void sub_100175B0() = 0;
-	virtual void sub_100175E0() = 0;
+	virtual void PushRenderTargetAndViewport(ITexture*) = 0;
+	virtual void PushRenderTargetAndViewport(ITexture*, int, int, int, int) = 0;
+	virtual void PushRenderTargetAndViewport(ITexture*, ITexture*, int, int, int, int) = 0;
+	virtual void PopRenderTargetAndViewport() = 0;
 	virtual void sub_10017610() = 0;
-	virtual void sub_10027F50() = 0;
+	virtual void CopyRenderTargetToTextureEx(ITexture*, int, Rect_t*, Rect_t*) = 0;
 	virtual void sub_10028030() = 0;
 	virtual void sub_10028770() = 0;
 	virtual void sub_10017640() = 0;

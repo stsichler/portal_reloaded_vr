@@ -70,8 +70,8 @@ Hooks::~Hooks()
 
 int Hooks::initSourceHooks()
 {
-	LPVOID pGetRenderTargetVFunc = (LPVOID)(m_Game->m_Offsets->GetRenderTarget.address);
-	hkGetRenderTarget.createHook(pGetRenderTargetVFunc, &dGetRenderTarget);
+	/*LPVOID pGetRenderTargetVFunc = (LPVOID)(m_Game->m_Offsets->GetRenderTarget.address);
+	hkGetRenderTarget.createHook(pGetRenderTargetVFunc, &dGetRenderTarget);*/
 
 	LPVOID pRenderViewVFunc = (LPVOID)(m_Game->m_Offsets->RenderView.address);
 	hkRenderView.createHook(pRenderViewVFunc, &dRenderView);
@@ -91,14 +91,14 @@ int Hooks::initSourceHooks()
 	LPVOID WriteUsercmdAddr = (LPVOID)(m_Game->m_Offsets->WriteUsercmd.address);
 	hkWriteUsercmd.createHook(WriteUsercmdAddr, &dWriteUsercmd);
 
-	LPVOID AdjustEngineViewportAddr = (LPVOID)(m_Game->m_Offsets->AdjustEngineViewport.address);
+	/*LPVOID AdjustEngineViewportAddr = (LPVOID)(m_Game->m_Offsets->AdjustEngineViewport.address);
 	hkAdjustEngineViewport.createHook(AdjustEngineViewportAddr, &dAdjustEngineViewport);
 
 	LPVOID ViewportAddr = (LPVOID)(m_Game->m_Offsets->Viewport.address);
 	hkViewport.createHook(ViewportAddr, &dViewport);
 
 	LPVOID GetViewportAddr = (LPVOID)(m_Game->m_Offsets->GetViewport.address);
-	hkGetViewport.createHook(GetViewportAddr, &dGetViewport);
+	hkGetViewport.createHook(GetViewportAddr, &dGetViewport);*/
 
 	LPVOID EyePositionAddr = (LPVOID)(m_Game->m_Offsets->EyePosition.address);
 	hkEyePosition.createHook(EyePositionAddr, &dEyePosition);
@@ -115,14 +115,14 @@ int Hooks::initSourceHooks()
 	LPVOID VGui_PaintAddr = (LPVOID)(m_Game->m_Offsets->VGui_Paint.address);
 	hkVgui_Paint.createHook(VGui_PaintAddr, &dVGui_Paint);
 
-	LPVOID IsSplitScreenAddr = (LPVOID)(m_Game->m_Offsets->IsSplitScreen.address);
-	hkIsSplitScreen.createHook(IsSplitScreenAddr, &dIsSplitScreen);
+	/*LPVOID IsSplitScreenAddr = (LPVOID)(m_Game->m_Offsets->IsSplitScreen.address);
+	hkIsSplitScreen.createHook(IsSplitScreenAddr, &dIsSplitScreen);*/
 
 	LPVOID PrePushRenderTargetAddr = (LPVOID)(m_Game->m_Offsets->PrePushRenderTarget.address);
 	hkPrePushRenderTarget.createHook(PrePushRenderTargetAddr, &dPrePushRenderTarget);
 
-	LPVOID GetFullScreenTextureAddr = (LPVOID)(m_Game->m_Offsets->GetFullScreenTexture.address);
-	hkGetFullScreenTexture.createHook(GetFullScreenTextureAddr, &dGetFullScreenTexture);
+	/*LPVOID GetFullScreenTextureAddr = (LPVOID)(m_Game->m_Offsets->GetFullScreenTexture.address);
+	hkGetFullScreenTexture.createHook(GetFullScreenTextureAddr, &dGetFullScreenTexture);*/
 
 	LPVOID Weapon_ShootPositionAddr = (LPVOID)(m_Game->m_Offsets->Weapon_ShootPosition.address);
 	hkWeapon_ShootPosition.createHook(Weapon_ShootPositionAddr, &dWeapon_ShootPosition);
@@ -174,7 +174,7 @@ int Hooks::initSourceHooks()
 	//
 	EntityIndex = (tEntindex)m_Game->m_Offsets->CBaseEntity_entindex.address;
 	GetOwner = (tGetOwner)m_Game->m_Offsets->GetOwner.address;
-
+	GetFullScreenTexture = (tGetFullScreenTexture)m_Game->m_Offsets->GetFullScreenTexture.address;
 	return 1;
 } 
 
@@ -315,9 +315,28 @@ void __fastcall Hooks::dRenderView(void *ecx, void *edx, CViewSetup &setup, CVie
 
 	m_PushedHud = false;
 
+
+
 	rndrContext = matSystem->GetRenderContext();
 	rndrContext->SetRenderTarget(NULL);
 	rndrContext->Release();
+
+	/*rndrContext = matSystem->GetRenderContext();
+
+	ITexture* fullscreenTxt = rndrContext->GetRenderTarget();
+
+	Rect_t srcRect;
+	srcRect.x = setup.x;
+	srcRect.y = setup.y;
+	srcRect.width = 1920;
+	srcRect.height = 1080;
+
+	rndrContext->SetRenderTarget(m_VR->m_RightEyeTexture);
+	rndrContext->CopyRenderTargetToTextureEx(fullscreenTxt, 0, &srcRect, &srcRect);
+
+	rndrContext->SetRenderTarget(NULL);
+	rndrContext->Release();*/
+
 
 	m_VR->m_RenderedNewFrame = true;
 }
@@ -500,51 +519,12 @@ float __fastcall Hooks::dProcessUsercmds(void *ecx, void *edx, edict_t *player, 
 	return result;
 }
 
-int Hooks::dReadUsercmd(void *buf, CUserCmd *move, CUserCmd *from)
-{
-	hkReadUsercmd.fOriginal(buf, move, from);
-
-	int i = m_Game->m_CurrentUsercmdID;
-	if (move->tick_count < 0) // Signal for VR CUserCmd
-	{
-		move->tick_count *= -1;
-
-		m_Game->m_PlayersVRInfo[i].isUsingVR = true;
-		m_Game->m_PlayersVRInfo[i].controllerAngle.x = (float)move->mousedx / 10;
-		m_Game->m_PlayersVRInfo[i].controllerAngle.y = (float)move->mousedy / 10;
-		m_Game->m_PlayersVRInfo[i].controllerPos.x = move->viewangles.z;
-		m_Game->m_PlayersVRInfo[i].controllerPos.y = move->upmove;
-
-		// Decode controllerAngle.z
-		int rollEncoding = move->command_number / 10000000;
-		move->command_number -= rollEncoding * 10000000;
-		m_Game->m_PlayersVRInfo[i].controllerAngle.z = (rollEncoding * 2) - 180;
-
-		// Decode viewangles.x
-		int decodedZInt = (move->viewangles.x / 10000);
-		float decodedAngle = abs((float)(move->viewangles.x - (decodedZInt * 10000)) / 10);
-		decodedAngle -= 360;
-		float decodedZ = (float)decodedZInt / 10;
-
-		m_Game->m_PlayersVRInfo[i].controllerPos.z = decodedZ;
-
-		move->viewangles.x = decodedAngle;
-		move->viewangles.z = 0;
-		move->upmove = 0;
-	}
-	else
-	{
-		m_Game->m_PlayersVRInfo[i].isUsingVR = false;
-	}
-	return 1;
-}
-
 void __fastcall Hooks::dWriteUsercmdDeltaToBuffer(void *ecx, void *edx, int a1, void *buf, int from, int to, bool isnewcommand) 
 {
 	return hkWriteUsercmdDeltaToBuffer.fOriginal(ecx, a1, buf, from, to, isnewcommand);
 }
 
-int Hooks::dWriteUsercmd(void *buf, CUserCmd *to, CUserCmd *from)
+int Hooks::dWriteUsercmd(bf_write *buf, CUserCmd *to, CUserCmd *from)
 {
 	if (m_VR->m_IsVREnabled)
 	{
@@ -591,6 +571,46 @@ int Hooks::dWriteUsercmd(void *buf, CUserCmd *to, CUserCmd *from)
 	}
 	return hkWriteUsercmd.fOriginal(buf, to, from);
 }
+
+int Hooks::dReadUsercmd(bf_read *buf, CUserCmd* move, CUserCmd* from)
+{
+	hkReadUsercmd.fOriginal(buf, move, from);
+
+	int i = m_Game->m_CurrentUsercmdID;
+	if (move->tick_count < 0) // Signal for VR CUserCmd
+	{
+		move->tick_count *= -1;
+
+		m_Game->m_PlayersVRInfo[i].isUsingVR = true;
+		m_Game->m_PlayersVRInfo[i].controllerAngle.x = (float)move->mousedx / 10;
+		m_Game->m_PlayersVRInfo[i].controllerAngle.y = (float)move->mousedy / 10;
+		m_Game->m_PlayersVRInfo[i].controllerPos.x = move->viewangles.z;
+		m_Game->m_PlayersVRInfo[i].controllerPos.y = move->upmove;
+
+		// Decode controllerAngle.z
+		int rollEncoding = move->command_number / 10000000;
+		move->command_number -= rollEncoding * 10000000;
+		m_Game->m_PlayersVRInfo[i].controllerAngle.z = (rollEncoding * 2) - 180;
+
+		// Decode viewangles.x
+		int decodedZInt = (move->viewangles.x / 10000);
+		float decodedAngle = abs((float)(move->viewangles.x - (decodedZInt * 10000)) / 10);
+		decodedAngle -= 360;
+		float decodedZ = (float)decodedZInt / 10;
+
+		m_Game->m_PlayersVRInfo[i].controllerPos.z = decodedZ;
+
+		move->viewangles.x = decodedAngle;
+		move->viewangles.z = 0;
+		move->upmove = 0;
+	}
+	else
+	{
+		m_Game->m_PlayersVRInfo[i].isUsingVR = false;
+	}
+	return 1;
+}
+
 
 void Hooks::dAdjustEngineViewport(int &x, int &y, int &width, int &height)
 {
