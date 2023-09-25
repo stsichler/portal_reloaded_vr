@@ -15,15 +15,20 @@
 #pragma once
 #endif
 
+#include "vector.h"
+#include "sdk.h"
+#include "platform.h"
+#include <cassert>
+#include "coordsize.h"
+#include "common_defs.h"
 
-#include "mathlib/mathlib.h"
-#include "mathlib/vector.h"
-#include "basetypes.h"
-#include "tier0/platform.h"
-#include "tier0/dbg.h"
+#ifndef OUT_Z_CAP
+#define OUT_Z_CAP(x) _Out_z_cap_(x)
+#endif
 
-
-
+#ifndef MIN
+#define MIN( a, b ) ( ( ( a ) < ( b ) ) ? ( a ) : ( b ) )
+#endif
 
 //-----------------------------------------------------------------------------
 // Forward declarations.
@@ -323,7 +328,7 @@ inline bool bf_write::CheckForOverflow(int nBits)
 	if ( m_iCurBit + nBits > m_nDataBits )
 	{
 		SetOverflowFlag();
-		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		//CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
 	}
 	
 	return m_bOverflow;
@@ -333,7 +338,7 @@ inline void bf_write::SetOverflowFlag()
 {
 	if ( m_bAssertOnOverflow )
 	{
-		Assert( false );
+		assert( false );
 	}
 
 	m_bOverflow = true;
@@ -361,7 +366,7 @@ inline void	bf_write::WriteOneBitAt( int iBit, int nValue )
 	if( iBit+1 > m_nDataBits )
 	{
 		SetOverflowFlag();
-		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		//CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
 		return;
 	}
 
@@ -380,10 +385,10 @@ inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCh
 	{
 		if ( curData >= (uint32)(1 << numbits) )
 		{
-			CallErrorHandler( BITBUFERROR_VALUE_OUT_OF_RANGE, GetDebugName() );
+			//CallErrorHandler( BITBUFERROR_VALUE_OUT_OF_RANGE, GetDebugName() );
 		}
 	}
-	Assert( numbits >= 0 && numbits <= 32 );
+	assert( numbits >= 0 && numbits <= 32 );
 #endif
 
 	extern uint32 g_BitWriteMasks[32][33];
@@ -393,7 +398,7 @@ inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCh
 	{
 		m_iCurBit = m_nDataBits;
 		SetOverflowFlag();
-		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		//CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
 		return;
 	}
 
@@ -402,7 +407,7 @@ inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCh
 
 	// Mask in a dword.
 	unsigned int iDWord = iCurBit >> 5;
-	Assert( (iDWord*4 + sizeof(int32)) <= (unsigned int)m_nDataBytes );
+	assert( (iDWord*4 + sizeof(int32)) <= (unsigned int)m_nDataBytes );
 
 	uint32 iCurBitMasked = iCurBit & 31;
 
@@ -641,7 +646,7 @@ inline void old_bf_read::SetOverflowFlag()
 {
 	if ( m_bAssertOnOverflow )
 	{
-		Assert( false );
+		assert( false );
 	}
 
 	m_bOverflow = true;
@@ -695,8 +700,8 @@ inline float old_bf_read::ReadBitFloat()
 {
 	int32 val;
 
-	Assert(sizeof(float) == sizeof(int32));
-	Assert(sizeof(float) == 4);
+	assert(sizeof(float) == sizeof(int32));
+	assert(sizeof(float) == 4);
 
 	if(CheckForOverflow(32))
 		return 0.0f;
@@ -725,7 +730,7 @@ inline unsigned int old_bf_read::ReadUBitLong( int numbits )
 		return 0;
 	}
 
-	Assert( numbits > 0 && numbits <= 32 );
+	assert( numbits > 0 && numbits <= 32 );
 
 	// Read the current dword.
 	int idword1 = m_iCurBit >> 5;
@@ -827,7 +832,7 @@ public:
 	~CBitWrite( void )
 	{
 		TempFlush();
-		Assert( (! m_pData ) || m_bFlushed );
+		assert( (! m_pData ) || m_bFlushed );
 	}
 	FORCEINLINE int GetNumBitsLeft( void ) const
 	{
@@ -1002,9 +1007,9 @@ FORCEINLINE void CBitWrite::WriteUBitLong( unsigned int nData, int nNumBits, boo
 	// Make sure it doesn't overflow.
 	if ( bCheckRange && nNumBits < 32 )
 	{
-		Assert( nData <= (uint32)(1 << nNumBits ) );
+		assert( nData <= (uint32)(1 << nNumBits ) );
 	}
-	Assert( nNumBits >= 0 && nNumBits <= 32 );
+	assert( nNumBits >= 0 && nNumBits <= 32 );
 #endif
 	if ( nNumBits <= m_nOutBitsAvail )
 	{
@@ -1062,6 +1067,7 @@ FORCEINLINE void CBitWrite::WriteFloat( float flValue )
 	LittleFloat( &flValue, &flValue );
 	WriteUBitLong( *((uint32 *) &flValue ), 32 );
 }
+
 
 class CBitRead : public CBitBuffer
 {
@@ -1213,7 +1219,7 @@ FORCEINLINE void CBitRead::GrabNextDWord( bool bOverFlowImmediately )
 		}
 		else
 		{
-			Assert( reinterpret_cast<intp>(m_pDataIn) + 3 < reinterpret_cast<intp>(m_pBufferEnd));
+			assert( reinterpret_cast<intp>(m_pDataIn) + 3 < reinterpret_cast<intp>(m_pBufferEnd));
 			m_nInBufWord = LittleDWord( *( m_pDataIn++ ) );
 		}
 }
@@ -1312,16 +1318,16 @@ FORCEINLINE unsigned int CBitRead::ReadUBitVar( void )
 	{
 		case 16:
 			ret = ( ret & 15 ) | ( ReadUBitLong( 4 ) << 4 );
-			Assert( ret >= 16);
+			assert( ret >= 16);
 			break;
 				
 		case 32:
 			ret = ( ret & 15 ) | ( ReadUBitLong( 8 ) << 4 );
-			Assert( ret >= 256);
+			assert( ret >= 256);
 			break;
 		case 48:
 			ret = ( ret & 15 ) | ( ReadUBitLong( 32 - 4 ) << 4 );
-			Assert( ret >= 4096 );
+			assert( ret >= 4096 );
 			break;
 	}
 	return ret;
@@ -1381,7 +1387,7 @@ public:																														  \
 		Check(); \
 	t nOld = old1.m();						\
 	t nNew = new1.m();						\
-	Assert( nOld == nNew );						\
+	assert( nOld == nNew );						\
 	Check();									\
 	return nOld;								\
 }
@@ -1390,7 +1396,7 @@ public:																														  \
 		Check(); \
 	t nOld = old1.m( x);						\
 	t nNew = new1.m( x );						\
-	Assert( nOld == nNew );						\
+	assert( nOld == nNew );						\
 	Check();									\
 	return nOld;								\
 }
@@ -1407,8 +1413,8 @@ class bf_read
 	{
 		int n=new1.GetNumBitsRead();
 		int o=old1.GetNumBitsRead();
-		Assert( n == o );
-		Assert( old1.IsOverflowed() == new1.IsOverflowed() );
+		assert( n == o );
+		assert( old1.IsOverflowed() == new1.IsOverflowed() );
 	}
 
 public:
@@ -1428,7 +1434,7 @@ public:
 	{
 		bool bOld = old1.IsOverflowed();
 		bool bNew = new1.IsOverflowed();
-		Assert( bOld == bNew );
+		assert( bOld == bNew );
 		Check();
 		return bOld;
 
@@ -1439,7 +1445,7 @@ public:
 		old1.ReadBits( pOut, nBits );
 		void *mem=stackalloc( 1+ ( nBits / 8 ) );
 		new1.ReadBits( mem, nBits );
-		Assert( memcmp( mem, pOut, nBits / 8 ) == 0 );
+		assert( memcmp( mem, pOut, nBits / 8 ) == 0 );
 	}
 
 	bool ReadBytes(void *pOut, int nBytes)
@@ -1453,14 +1459,14 @@ public:
 	{
 		unsigned int nOld = old1.ReadUBitLong( numbits );
 		unsigned int nNew = new1.ReadUBitLong( numbits );
-		Assert( nOld == nNew );
+		assert( nOld == nNew );
 		Check();
 		return nOld;
 	}
 
 	unsigned const char*	GetBasePointer()
 	{
-		Assert( old1.GetBasePointer() == new1.GetBasePointer() );
+		assert( old1.GetBasePointer() == new1.GetBasePointer() );
 		Check();
 		return old1.GetBasePointer();
 	}
@@ -1520,8 +1526,8 @@ public:
 		int oldn, newn;
 		bool bOld = old1.ReadString( pStr, bufLen, bLine, &oldn );
 		bool bNew = new1.ReadString( pStr, bufLen, bLine, &newn );
-		Assert( bOld == bNew );
-		Assert( oldn == newn );
+		assert( bOld == bNew );
+		assert( oldn == newn );
 		if ( pOutNumChars )
 			*pOutNumChars = oldn;
 		Check();
@@ -1534,8 +1540,8 @@ public:
 		int oldn, newn;
 		bool bOld = old1.ReadWString( pStr, bufLen, bLine, &oldn );
 		bool bNew = new1.ReadWString( pStr, bufLen, bLine, &newn );
-		Assert( bOld == bNew );
-		Assert( oldn == newn );
+		assert( bOld == bNew );
+		assert( oldn == newn );
 		if ( pOutNumChars )
 			*pOutNumChars = oldn;
 		Check();
@@ -1548,7 +1554,7 @@ public:
 		old1.ReadBitVec3Coord( fa );
 		Vector test;
 		new1.ReadBitVec3Coord( test );
-		Assert( VectorsAreEqual( fa, test ));
+		assert( VectorsAreEqual( fa, test ));
 		Check();
 	}
 	void ReadBitVec3Normal( Vector& fa )
@@ -1557,7 +1563,7 @@ public:
 		old1.ReadBitVec3Coord( fa );
 		Vector test;
 		new1.ReadBitVec3Coord( test );
-		Assert( VectorsAreEqual( fa, test ));
+		assert( VectorsAreEqual( fa, test ));
 		Check();
 	}
 	
@@ -1567,8 +1573,8 @@ public:
 		bool bold, bnew;
 		char *pold = old1.ReadAndAllocateString( &bold );
 		char *pnew = new1.ReadAndAllocateString( &bnew );
-		Assert( bold == bnew );
-		Assert(strcmp( pold, pnew ) == 0 );
+		assert( bold == bnew );
+		assert(strcmp( pold, pnew ) == 0 );
 		delete[] pnew;
 		Check();
 		if ( pOverflow )

@@ -441,8 +441,12 @@
     <ClInclude Include="game.h" />
     <ClInclude Include="hooks.h" />
     <ClInclude Include="offsets.h" />
+    <ClInclude Include="sdk\bitbuf.h" />
     <ClInclude Include="sdk\checksum_crc.h" />
     <ClInclude Include="sdk\cnewparticleeffect.h" />
+    <ClInclude Include="sdk\common_defs.h" />
+    <ClInclude Include="sdk\coordsize.h" />
+    <ClInclude Include="sdk\platform.h" />
     <ClInclude Include="sdk\sdk_server.h" />
     <ClInclude Include="sdk\usercmd.h" />
     <ClInclude Include="sdk\material.h" />
@@ -452,7 +456,7 @@
     <ClInclude Include="sdk\vector.h" />
     <ClInclude Include="sigscanner.h" />
     <ClInclude Include="vr.h" />
-    <ClInclude Include="worldsize.h" />
+    <ClInclude Include="sdk\worldsize.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\dxvk\src\d3d9\d3d9_adapter.cpp" />
@@ -591,7 +595,9 @@
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="hooks.cpp" />
+    <ClCompile Include="sdk\bitbuf.cpp" />
     <ClCompile Include="sdk\checksum_crc.cpp" />
+    <ClCompile Include="sdk\newbitbuf.cpp" />
     <ClCompile Include="vr.cpp" />
   </ItemGroup>
   <ItemGroup>

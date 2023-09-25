@@ -1424,6 +1424,7 @@ void VR::ParseConfigFile()
     parseOrDefault("HudAlwaysVisible", m_HudAlwaysVisible, false);*/
     parseOrDefault("AimMode", m_AimMode, 2);
     parseOrDefault("AntiAliasing", m_AntiAliasing, 0);
+    parseOrDefault("RenderWindow", m_RenderWindow, 0);
     parseXYZOrDefaultZero("ViewmodelPosCustomOffset", m_ViewmodelPosCustomOffset);
     parseXYZOrDefaultZero("ViewmodelAngCustomOffset", m_ViewmodelAngCustomOffset);
 }

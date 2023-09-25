@@ -277,6 +277,12 @@ private:
 #endif
 };
 
+inline void Vector::Init(vec_t ix, vec_t iy, vec_t iz)
+{
+	x = ix; y = iy; z = iz;
+}
+
+
 inline Vector::Vector(void)
 {
 #ifdef _DEBUG
@@ -999,6 +1005,12 @@ inline QAngle::QAngle()
 #endif
 #endif
 }
+
+inline void QAngle::Init(vec_t ix, vec_t iy, vec_t iz)
+{
+	x = ix; y = iy; z = iz;
+}
+
 
 inline QAngle::QAngle(vec_t X, vec_t Y, vec_t Z)
 {
