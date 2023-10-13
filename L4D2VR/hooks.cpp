@@ -238,10 +238,15 @@ void __fastcall Hooks::dRenderView(void *ecx, void *edx, CViewSetup &setup, CVie
 		float distance = sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
 
 		// Rudimentary portalling detection
-		if (distance > 35) {
-			//m_VR->m_RotationOffset.x += m_VR->m_PortalRotationOffset.x;
+		if (distance > m_VR->m_PortallingDetectionDistanceThreshold) {
 			m_VR->m_RotationOffset.y += m_VR->m_PortalRotationOffset.y;
-			//m_VR->m_RotationOffset.z += m_VR->m_PortalRotationOffset.z;
+
+			// If enabled, the camera pitch/roll follows the direction of the portal -- might be disorienting
+			// for some people:
+			if (m_VR->m_ApplyPitchAndRollPortalRotationOffset) {
+				m_VR->m_RotationOffset.x += m_VR->m_PortalRotationOffset.x;
+				m_VR->m_RotationOffset.z += m_VR->m_PortalRotationOffset.z;
+			}
 
 			m_VR->UpdateHMDAngles();
 

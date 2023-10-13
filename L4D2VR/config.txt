@@ -14,3 +14,6 @@ ViewmodelPosCustomOffsetZ=0.0
 ViewmodelAngCustomOffsetX=0.0
 ViewmodelAngCustomOffsetY=0.0
 ViewmodelAngCustomOffsetZ=0.0
+PortallingDetectionDistanceThreshold=35 # The distance threshold used to detect portalling
+ApplyPitchAndRollPortalRotationOffset=false # If `true`, the camera pitch/roll follows the exit portal's orientation when portalling
+CameraUprightRecoverySpeed=0.2 # If the above is `true`, this controls how quickly the camera turns back upright after portalling
