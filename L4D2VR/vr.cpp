@@ -654,6 +654,36 @@ void VR::ProcessInput()
         m_RotationOffset.y -= 360 * std::floor(m_RotationOffset.y / 360);
     }
 
+    // Re-align camera upright after portalling
+    if (m_RotationOffset.x != 0.f || m_RotationOffset.z != 0.f)
+    {
+        // Last valid yaw angle, in case we need to revert to it.
+        const float lastYaw = m_RotationOffset.y;
+
+        const QAngle targetRotation(0, lastYaw, 0);
+
+        const auto lerp = [](float a, float b, float f) -> float {
+            return a * (1.0 - f) + (b * f);
+        };
+
+        float lerpedPitch = lerp(m_RotationOffset.x, targetRotation.x, m_CameraUprightRecoverySpeed);
+        float lerpedYaw = lerp(m_RotationOffset.y, targetRotation.y, m_CameraUprightRecoverySpeed);
+        float lerpedRoll = lerp(m_RotationOffset.z, targetRotation.z, m_CameraUprightRecoverySpeed);
+
+        m_RotationOffset = QAngle(lerpedPitch, lerpedYaw, lerpedRoll);
+
+        if (abs(m_RotationOffset.x) < 0.0001)
+            m_RotationOffset.x = 0;
+        if (abs(m_RotationOffset.z) < 0.0001)
+            m_RotationOffset.z = 0;
+
+        // Just in case any calculation went awry, revert to an upright vector:
+        if (std::isnan(m_RotationOffset.x) || std::isnan(m_RotationOffset.y) || std::isnan(m_RotationOffset.z))
+        {
+            m_RotationOffset = QAngle(0.f, lastYaw, 0.f);
+        }
+    }
+
     if (PressedDigitalAction(m_ActionPrimaryAttack))
     {
         m_Game->ClientCmd_Unrestricted("+attack");
@@ -1437,6 +1467,9 @@ void VR::ParseConfigFile()
     parseOrDefault("AntiAliasing", m_AntiAliasing, 0);
     parseXYZOrDefaultZero("ViewmodelPosCustomOffset", m_ViewmodelPosCustomOffset);
     parseXYZOrDefaultZero("ViewmodelAngCustomOffset", m_ViewmodelAngCustomOffset);
+    parseOrDefault("PortallingDetectionDistanceThreshold", m_PortallingDetectionDistanceThreshold, 35);
+    parseOrDefault("ApplyPitchAndRollPortalRotationOffset", m_ApplyPitchAndRollPortalRotationOffset, false);
+    parseOrDefault("CameraUprightRecoverySpeed", m_CameraUprightRecoverySpeed, 0.2f);
 }
 
 void VR::WaitForConfigUpdate()
