@@ -138,6 +138,7 @@ int VR::SetActionManifest(const char *fileName)
     m_Input->GetActionHandle("/actions/main/in/Scoreboard", &m_Scoreboard);
     m_Input->GetActionHandle("/actions/main/in/ShowHUD", &m_ShowHUD);
     m_Input->GetActionHandle("/actions/main/in/Pause", &m_Pause);
+    m_Input->GetActionHandle("/actions/main/in/ThirdAttack", &m_ThirdAttack);
 
     m_Input->GetActionSetHandle("/actions/main", &m_ActionSet);
     m_ActiveActionSet = {};
@@ -670,6 +671,11 @@ void VR::ProcessInput()
     else
     {
         m_Game->ClientCmd_Unrestricted("-attack2");
+    }
+
+    if (PressedDigitalAction(m_ThirdAttack, true))
+    {
+        m_Game->ClientCmd_Unrestricted("ent_fire @att3 trigger");
     }
 
     if (PressedDigitalAction(m_ActionJump))

@@ -171,6 +171,7 @@ public:
 	vr::VRActionHandle_t m_Scoreboard;
 	vr::VRActionHandle_t m_ShowHUD;
 	vr::VRActionHandle_t m_Pause;
+	vr::VRActionHandle_t m_ThirdAttack;
 
 	TrackedDevicePoseData m_HmdPose;
 	TrackedDevicePoseData m_LeftControllerPose;
