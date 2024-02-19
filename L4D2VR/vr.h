@@ -224,7 +224,7 @@ public:
 	Vector GetViewOrigin(Vector setupOrigin);
 	Vector GetViewOriginLeft(Vector setupOrigin);
 	Vector GetViewOriginRight(Vector setupOrigin);
-	bool PressedDigitalAction(vr::VRActionHandle_t &actionHandle, bool checkIfActionChanged = false);
+	bool CheckDigitalActionChanged(vr::VRActionHandle_t& actionHandle, bool& state);
 	bool GetAnalogActionData(vr::VRActionHandle_t &actionHandle, vr::InputAnalogActionData_t &analogDataOut);
 	void ResetPosition();
 	void GetPoseData(vr::TrackedDevicePose_t &poseRaw, TrackedDevicePoseData &poseOut);
