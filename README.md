@@ -11,15 +11,18 @@
 This game contains flashing lights and fast motion sequences.
 
 ## Things that work
+* Singleplayer
 * 6DoF VR view
 * Motion controls for portal gun and grabbable objects
 * 3rd portal (use left trigger)
 
 ## Things that need fixing
+* Initial player height is wrong and must be manually adapted
+* Lighting effects of portal gun are misplaced
+* Time portals can be placed when it should not be possible at all
 * Use the game's own haptic feedback
 * In-game UI and pause menu are broken
 * 6DoF and Roomscale needs to be reimplemented
-* CPU is underutilized
 
 ## How to use
 1. Download [PortalReloadedVR.zip](https://github.com/stsichler/portal_reloaded_vr/releases) and extract the files to your Portal Reloaded directory (steamapps\common\Portal Reloaded)
@@ -36,6 +39,7 @@ If you have no audio:
 If the game isn't loading in VR:
 * Try opening SteamVR before the game
 * Disable SteamVR theater in [Steam settings](https://external-preview.redd.it/1WdLExouo_YKhTGT6C5GGrOjeWO7qNdIdDRvIRBhw-0.png?auto=webp&s=0d4447a9d954e1ec15b2c010cf50eeabd51f4197)
+* Try to [unblock access](https://winaero.com/how-to-unblock-files-downloaded-from-internet-in-windows-10/) to files that were extracted to `bin/` (`d3d9.dll` and `openvr_api.dll`)
 
 If the game is stuttering, try: 
 * Steam Settings -> Shader Pre-Caching -> Allow background processing of Vulkan shaders
