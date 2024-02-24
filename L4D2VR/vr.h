@@ -183,14 +183,16 @@ public:
 	QAngle m_RotationOffset = { 0, 0, 0 };
 	bool m_OverrideEyeAngles = false;
 	std::chrono::steady_clock::time_point m_PrevFrameTime;
+	bool m_InitialPosReset = false;
 
 	float m_TurnSpeed = 0.15;
-	bool m_SnapTurning = false;
+	bool m_SnapTurning = true;
 	float m_SnapTurnAngle = 45.0;
 	bool m_LeftHanded = false;
 	float m_VRScale = 43.2;
 	float m_IpdScale = 1.0;
 	bool m_6DOF = true;
+	bool m_SeatedMode = false;
 	float m_HudDistance = 1.3;
 	float m_HudSize = 4.0;
 	bool m_HudAlwaysVisible = false;
@@ -211,7 +213,6 @@ public:
 	void ProcessMenuInput();
 	void ProcessInput();
 	VMatrix VMatrixFromHmdMatrix(const vr::HmdMatrix34_t &hmdMat);
-	vr::HmdMatrix34_t VMatrixToHmdMatrix(const VMatrix &vMat);
 	vr::HmdMatrix34_t GetControllerTipMatrix(vr::ETrackedControllerRole controllerRole);
 	bool CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHandle, vr::ETrackedControllerRole controllerRole);
 	QAngle GetRightControllerAbsAngle();
