@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include "MinHook.h"
+#include "bitbuf.h"
 
 class Game;
 class VR;
@@ -16,6 +17,10 @@ class IMatRenderContext;
 struct vrect_t;
 struct Ray_t;
 struct VMatrix;
+struct Rect_t;
+class bf_write;
+class bf_read;
+
 
 template <typename T>
 struct Hook {
@@ -221,9 +226,8 @@ public:
 	static int dServerFireTerrorBullets(int playerId, const Vector &vecOrigin, const QAngle &vecAngles, int a4, int a5, int a6, float a7);
 	static int dClientFireTerrorBullets(int playerId, const Vector &vecOrigin, const QAngle &vecAngles, int a4, int a5, int a6, float a7);
 	static float __fastcall dProcessUsercmds(void *ecx, void *edx, edict_t *player, void *buf, int numcmds, int totalcmds, int dropped_packets, bool ignore, bool paused);
-	static int dReadUsercmd(void *buf, CUserCmd *move, CUserCmd *from);
-	static void __fastcall dWriteUsercmdDeltaToBuffer(void *ecx, void *edx, int a1, void *buf, int from, int to, bool isnewcommand);
-	static int dWriteUsercmd(void *buf, CUserCmd *to, CUserCmd *from);
+	static int dReadUsercmd(bf_read *buf, CUserCmd *move, CUserCmd *from);
+	static int dWriteUsercmd(bf_write *buf, CUserCmd *to, CUserCmd *from);
 	static void dAdjustEngineViewport(int &x, int &y, int &width, int &height);
 	static void __fastcall dViewport(void *ecx, void *edx, int x, int y, int width, int height);
 	static void __fastcall dGetViewport(void *ecx, void *edx, int &x, int &y, int &width, int &height);
@@ -275,8 +279,6 @@ public:
 	static bool __fastcall dUpdateObjectVM(void* ecx, void* edx, void* pPlayer, float flError);
 	static void __fastcall dRotateObject(void* ecx, void* edx, void* pPlayer, float fRotAboutUp, float fRotAboutRight, bool bUseWorldUpInsteadOfPlayerUp);
 	static QAngle& __fastcall dEyeAngles(void* ecx, void* edx);
-	
-	static void dMatrixBuildPerspectiveX(void*& dst, double flFovX, double flAspect, double flZNear, double flZFar);
 
 	static int __fastcall dGetDefaultFOV(void* ecx, void* edx);
 	static double __fastcall dGetFOV(void* ecx, void* edx);
@@ -301,4 +303,5 @@ public:
 	static inline tUTIL_Portal_AngleTransform UTIL_Portal_AngleTransform;
 	static inline tEntindex EntityIndex;
 	static inline tGetOwner GetOwner;
+	static inline tGetFullScreenTexture GetFullScreenTexture;
 };

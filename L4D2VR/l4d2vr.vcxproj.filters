@@ -810,10 +810,22 @@
     <ClInclude Include="sdk\sdk_server.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="worldsize.h">
+    <ClInclude Include="sdk\worldsize.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="sdk\cnewparticleeffect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sdk\bitbuf.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sdk\platform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sdk\coordsize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="sdk\common_defs.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -1231,6 +1243,12 @@
     </ClCompile>
     <ClCompile Include="..\dxvk\src\dxvk\dxvk_pipecompiler.cpp">
       <Filter>dxvk</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\bitbuf.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="sdk\newbitbuf.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

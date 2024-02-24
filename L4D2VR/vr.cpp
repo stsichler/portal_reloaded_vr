@@ -97,6 +97,10 @@ VR::VR(Game *game)
     m_Overlay->SetOverlayCurvature(m_MainMenuHandle, 0.15f);
     m_Overlay->SetOverlayMouseScale(m_MainMenuHandle, &mouseScaleMenu);
 
+    vr::VRCompositor()->SetTrackingSpace(m_SeatedMode 
+        ? vr::TrackingUniverseSeated
+        : vr::TrackingUniverseStanding);
+
     UpdatePosesAndActions();
 
     m_IsInitialized = true;
@@ -207,6 +211,13 @@ void VR::Update()
     SubmitVRTextures();
     UpdatePosesAndActions();
     UpdateTracking();
+
+    if (!m_InitialPosReset)
+    {
+        if (m_SeatedMode)
+            ResetPosition();
+        m_InitialPosReset = true;
+    }
 
     if (m_Game->m_VguiSurface->IsCursorVisible()) {
         ProcessMenuInput();
@@ -756,29 +767,6 @@ VMatrix VR::VMatrixFromHmdMatrix(const vr::HmdMatrix34_t &hmdMat)
     return vMat;
 }
 
-vr::HmdMatrix34_t VR::VMatrixToHmdMatrix(const VMatrix &vMat)
-{
-    vr::HmdMatrix34_t hmdMat = {0};
-
-    hmdMat.m[0][0] = vMat.m[0][0];
-    hmdMat.m[1][0] = vMat.m[0][1];
-    hmdMat.m[2][0] = vMat.m[0][2];
-
-    hmdMat.m[0][1] = vMat.m[1][0];
-    hmdMat.m[1][1] = vMat.m[1][1];
-    hmdMat.m[2][1] = vMat.m[1][2];
-
-    hmdMat.m[0][2] = vMat.m[2][0];
-    hmdMat.m[1][2] = vMat.m[2][1];
-    hmdMat.m[2][2] = vMat.m[2][2];
-
-    hmdMat.m[0][3] = vMat.m[3][0];
-    hmdMat.m[1][3] = vMat.m[3][1];
-    hmdMat.m[2][3] = vMat.m[3][2];
-
-    return hmdMat;
-}
-
 vr::HmdMatrix34_t VR::GetControllerTipMatrix(vr::ETrackedControllerRole controllerRole)
 {
     vr::VRInputValueHandle_t inputValue = vr::k_ulInvalidInputValueHandle;
@@ -918,6 +906,8 @@ void VR::UpdateHMDAngles() {
 void VR::ResetPosition()
 {
     m_Center = m_HmdPose.TrackedDevicePos;
+    if (!m_SeatedMode)
+        m_Center.z = 0;
 }
 
 void VR::UpdateTracking()
@@ -943,6 +933,10 @@ void VR::UpdateTracking()
     UpdateHMDAngles();
 
     m_HmdPosRelative = hmdPosCorrected * m_VRScale;
+    if (!m_SeatedMode)
+        // 64 is the eye view height from the player's base position
+        // we subtract this here so that we place the HMD height at the actual player height if 6DOF is enabled
+        m_HmdPosRelative.z -= 64;
 
     // Roomscale setup
     /*Vector cameraMovingDirection = m_Center - m_SetupOriginPrev;
@@ -1406,18 +1400,20 @@ void VR::ParseConfigFile()
         parseOrDefault((keyPrefix + "Z").c_str(), target.z, 0.f);
     };
 
-    parseOrDefault("SnapTurning", m_SnapTurning, false);
+    parseOrDefault("SnapTurning", m_SnapTurning, true);
     parseOrDefault("SnapTurnAngle", m_SnapTurnAngle, 45.0f);
     parseOrDefault("TurnSpeed", m_TurnSpeed, 0.15f);
     parseOrDefault("LeftHanded", m_LeftHanded, false);
     parseOrDefault("VRScale", m_VRScale, 43.2f);
     parseOrDefault("IPDScale", m_IpdScale, 1.0f);
-    parseOrDefault("6DOF", m_6DOF, true);
-    /*parseOrDefault("HudDistance", m_HudDistance, 1.3f);
+    parseOrDefault("SeatedMode", m_SeatedMode, false);
+    /*parseOrDefault("6DOF", m_6DOF, true);
+    parseOrDefault("HudDistance", m_HudDistance, 1.3f);
     parseOrDefault("HudSize", m_HudSize, 4.0f);
     parseOrDefault("HudAlwaysVisible", m_HudAlwaysVisible, false);*/
     parseOrDefault("AimMode", m_AimMode, 2);
     parseOrDefault("AntiAliasing", m_AntiAliasing, 0);
+    parseOrDefault("RenderWindow", m_RenderWindow, 0);
     parseXYZOrDefaultZero("ViewmodelPosCustomOffset", m_ViewmodelPosCustomOffset);
     parseXYZOrDefaultZero("ViewmodelAngCustomOffset", m_ViewmodelAngCustomOffset);
 }
