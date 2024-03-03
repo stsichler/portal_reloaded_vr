@@ -1,0 +1,22 @@
+From 846a044d94cc1786380e94c074b367c13e5a6fab Mon Sep 17 00:00:00 2001
+From: Shane Davis <shane.davis1231@gmail.com>
+Date: Sun, 5 Jun 2022 18:38:07 -0700
+Subject: [PATCH 3/6] update version
+
+---
+ include/version.h | 3 +++
+ 1 file changed, 3 insertions(+)
+ create mode 100644 include/version.h
+
+diff --git a/include/version.h b/include/version.h
+new file mode 100644
+index 00000000..fe4fa7fb
+--- /dev/null
++++ b/include/version.h
+@@ -0,0 +1,3 @@
++#pragma once
++
++#define DXVK_VERSION "279b4b"
+-- 
+2.39.2.windows.1
+

@@ -1,0 +1,35 @@
+From 8a7d9ed86c1a26c11587ff28cf8bf9f714046ab1 Mon Sep 17 00:00:00 2001
+From: Holger Frydrych <holger@frydrych.org>
+Date: Sun, 17 Sep 2023 13:40:17 +0200
+Subject: [PATCH 6/6] Ensure dxvk loads all required Vulkan extensions for
+ OpenVR support
+
+---
+ src/dxvk/dxvk_openvr.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/dxvk/dxvk_openvr.cpp b/src/dxvk/dxvk_openvr.cpp
+index 48b0dea9..6e505351 100644
+--- a/src/dxvk/dxvk_openvr.cpp
++++ b/src/dxvk/dxvk_openvr.cpp
+@@ -263,7 +263,7 @@ namespace dxvk {
+ 
+       // If the app has not initialized OpenVR yet, we need
+       // to do it now in order to grab a compositor instance
+-      g_vrFunctions.initInternal(&error, vr::VRApplication_Background);
++      g_vrFunctions.initInternal(&error, vr::VRApplication_Scene);
+       m_initializedOpenVr = error == vr::VRInitError_None;
+ 
+       if (error != vr::VRInitError_None) {
+@@ -307,7 +307,7 @@ namespace dxvk {
+   HMODULE VrInstance::loadLibrary() {
+     HMODULE handle = nullptr;
+     if (!(handle = ::GetModuleHandle("openvr_api.dll"))) {
+-      handle = ::LoadLibrary("openvr_api_dxvk.dll");
++      handle = ::LoadLibrary("openvr_api.dll");
+       m_loadedOvrApi = handle != nullptr;
+     }
+     return handle;
+-- 
+2.39.2.windows.1
+

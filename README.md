@@ -52,7 +52,8 @@ If the game is crashing, try:
 * Re-installing the game
 
 ## Build instructions
-1. ``` git clone --recurse-submodules https://github.com/Gistix/portal2vr.git ```
+1. Clone Repository
+2. Run ```dxvk-apply-patches.bat```
 2. Open l4d2vr.sln
 3. Set to x86 Debug or Release
 4. Build -> Build Solution

@@ -1,0 +1,239 @@
+From cd09bc3c7a06ebe50ab4f6805199a6b88226a9d5 Mon Sep 17 00:00:00 2001
+From: Holger Frydrych <holger@frydrych.org>
+Date: Sun, 17 Sep 2023 09:34:30 +0200
+Subject: [PATCH 5/6] add antialiasing in VR
+
+- Create VR textures with antialiasing if requested
+- Submit the resolve image if texture is multisampled; submitting the multisampled texture directly has caused issues with some GPU drivers in the past
+---
+ src/d3d9/d3d9_common_texture.cpp |  5 +-
+ src/d3d9/d3d9_common_texture.h   | 14 +++++-
+ src/d3d9/d3d9_device.cpp         | 79 +++++++++++++++++++++++++++++++-
+ src/d3d9/d3d9_device.h           |  2 +
+ src/d3d9/d3d9_vr.cpp             |  2 +-
+ 5 files changed, 96 insertions(+), 6 deletions(-)
+
+diff --git a/src/d3d9/d3d9_common_texture.cpp b/src/d3d9/d3d9_common_texture.cpp
+index b0681d49..d4056d8e 100644
+--- a/src/d3d9/d3d9_common_texture.cpp
++++ b/src/d3d9/d3d9_common_texture.cpp
+@@ -536,7 +536,8 @@ namespace dxvk {
+           UINT                   Layer,
+           UINT                   Lod,
+           VkImageUsageFlags      UsageFlags,
+-          bool                   Srgb) {    
++          bool                   Srgb,
++          bool                   Resolved) {
+     DxvkImageViewCreateInfo viewInfo;
+     viewInfo.format    = m_mapping.ConversionFormatInfo.FormatColor != VK_FORMAT_UNDEFINED
+                        ? PickSRGB(m_mapping.ConversionFormatInfo.FormatColor, m_mapping.ConversionFormatInfo.FormatSrgb, Srgb)
+@@ -565,7 +566,7 @@ namespace dxvk {
+                            VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY };
+ 
+     // Create the underlying image view object
+-    return m_device->GetDXVKDevice()->createImageView(GetImage(), viewInfo);
++    return m_device->GetDXVKDevice()->createImageView(Resolved ? GetResolveImage() : GetImage(), viewInfo);
+   }
+ 
+ 
+diff --git a/src/d3d9/d3d9_common_texture.h b/src/d3d9/d3d9_common_texture.h
+index e52ead2f..5809e0ae 100644
+--- a/src/d3d9/d3d9_common_texture.h
++++ b/src/d3d9/d3d9_common_texture.h
+@@ -135,8 +135,12 @@ namespace dxvk {
+      * \returns An image with identical info, but 1 sample
+      */
+     const Rc<DxvkImage>& GetResolveImage() {
+-      if (unlikely(m_resolveImage == nullptr))
++      if (unlikely(m_resolveImage == nullptr)) {
+         m_resolveImage = CreateResolveImage();
++        m_resolveView.Color = CreateView(AllLayers, 0, VK_IMAGE_USAGE_SAMPLED_BIT, false, true);
++        if (IsSrgbCompatible())
++          m_resolveView.Srgb = CreateView(AllLayers, 0, VK_IMAGE_USAGE_SAMPLED_BIT, true, true);
++      }
+ 
+       return m_resolveImage;
+     }
+@@ -341,6 +345,10 @@ namespace dxvk {
+       return m_sampleView.Pick(srgb && IsSrgbCompatible());
+     }
+ 
++    const Rc<DxvkImageView>& GetResolveView(bool srgb) const {
++      return m_resolveView.Pick(srgb && IsSrgbCompatible());
++    }
++
+     VkImageLayout DetermineRenderTargetLayout() const {
+       return m_image != nullptr &&
+              m_image->info().tiling == VK_IMAGE_TILING_OPTIMAL &&
+@@ -368,7 +376,8 @@ namespace dxvk {
+             UINT                   Layer,
+             UINT                   Lod,
+             VkImageUsageFlags      UsageFlags,
+-            bool                   Srgb);
++            bool                   Srgb,
++            bool                   Resolved = false);
+     D3D9SubresourceBitset& GetUploadBitmask() { return m_needsUpload; }
+ 
+     void SetAllNeedUpload() {
+@@ -489,6 +498,7 @@ namespace dxvk {
+     bool                          m_hazardous = false;
+ 
+     D3D9ColorView                 m_sampleView;
++    D3D9ColorView                 m_resolveView;
+ 
+     D3D9SubresourceBitset         m_locked = { };
+ 
+diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+index 5afbfba8..b4bbd4ae 100644
+--- a/src/d3d9/d3d9_device.cpp
++++ b/src/d3d9/d3d9_device.cpp
+@@ -35,6 +35,26 @@
+ #pragma fenv_access (on)
+ #endif
+ 
++namespace
++{
++	D3DMULTISAMPLE_TYPE MapToMultisampleType(int numSamples)
++	{
++		switch (numSamples)
++		{
++		case 16:
++            return D3DMULTISAMPLE_16_SAMPLES;
++		case 8:
++            return D3DMULTISAMPLE_8_SAMPLES;
++		case 4:
++            return D3DMULTISAMPLE_4_SAMPLES;
++		case 2:
++            return D3DMULTISAMPLE_2_SAMPLES;
++		default:
++            return D3DMULTISAMPLE_NONE;
++		}
++	}
++}
++
+ namespace dxvk {
+ 
+   D3D9DeviceEx::D3D9DeviceEx(
+@@ -471,6 +491,12 @@ namespace dxvk {
+     desc.IsBackBuffer       = FALSE;
+     desc.IsAttachmentOnly   = FALSE;
+ 
++	if (g_Game && g_Game->m_VR && (g_Game->m_VR->m_CreatingTextureID == VR::Texture_LeftEye || g_Game->m_VR->m_CreatingTextureID == VR::Texture_RightEye))
++	{
++        dxvk::Logger::info(str::format("Creating texture with MSAA ", g_Game->m_VR->m_AntiAliasing));
++		desc.MultiSample = MapToMultisampleType(g_Game->m_VR->m_AntiAliasing);
++	}
++
+     if (FAILED(D3D9CommonTexture::NormalizeTextureProperties(this, &desc)))
+       return D3DERR_INVALIDCALL;
+ 
+@@ -3520,6 +3546,11 @@ namespace dxvk {
+     hDestWindowOverride,
+     pDirtyRegion,
+     dwFlags);
++
++    if (g_Game && g_Game->m_VR && g_Game->m_VR->m_CreatedVRTextures) {
++      ResolveImage(GetCommonTexture(g_Game->m_VR->m_D9LeftEyeSurface));
++      ResolveImage(GetCommonTexture(g_Game->m_VR->m_D9RightEyeSurface));
++    }
+ 	  
+ 	g_D3DVR9->WaitDeviceIdle();
+     
+@@ -3655,6 +3686,12 @@ namespace dxvk {
+     desc.IsBackBuffer       = FALSE;
+     desc.IsAttachmentOnly   = TRUE;
+ 
++	if (g_Game && g_Game->m_VR && (g_Game->m_VR->m_CreatingTextureID == VR::Texture_LeftEye || g_Game->m_VR->m_CreatingTextureID == VR::Texture_RightEye))
++	{
++        dxvk::Logger::info(str::format("Creating depth/stencil surface with MSAA ", g_Game->m_VR->m_AntiAliasing));
++		desc.MultiSample = MapToMultisampleType(g_Game->m_VR->m_AntiAliasing);
++	}
++
+     if (FAILED(D3D9CommonTexture::NormalizeTextureProperties(this, &desc)))
+       return D3DERR_INVALIDCALL;
+ 
+@@ -6064,9 +6101,22 @@ namespace dxvk {
+     D3D9CommonTexture* commonTex =
+       GetCommonTexture(m_state.textures[StateSampler]);
+ 
++    auto imageView = commonTex->GetSampleView(srgb);
++
++    auto image = commonTex->GetImage();
++
++    // Can only bind a non-multisampled texture.
++    // otherwise we need to resolve.
++    bool needsResolve = image != nullptr && image->info().sampleCount != VK_SAMPLE_COUNT_1_BIT;
++
++    if (needsResolve) {
++      ResolveImage(commonTex);
++      imageView = commonTex->GetResolveView(srgb);
++    }
++
+     EmitCs([
+       cSlot = slot,
+-      cImageView = commonTex->GetSampleView(srgb)
++      cImageView = imageView
+     ](DxvkContext* ctx) {
+       ctx->bindResourceView(cSlot, cImageView, nullptr);
+     });
+@@ -7466,4 +7516,31 @@ namespace dxvk {
+     return m_csChunk->empty() ? m_csSeqNum : m_csSeqNum + 1;
+   }
+ 
++  void D3D9DeviceEx::ResolveImage(D3D9CommonTexture* commonTex) {
++    auto image = commonTex->GetImage();
++    bool needsResolve = image != nullptr && image->info().sampleCount != VK_SAMPLE_COUNT_1_BIT;
++
++    if (needsResolve) {
++      const DxvkFormatInfo* formatInfo = imageFormatInfo(image->info().format);
++      const VkImageSubresource subresource = commonTex->GetSubresourceFromIndex(formatInfo->aspectMask, 0);
++      VkImageResolve region;
++      region.srcSubresource = {subresource.aspectMask, subresource.mipLevel,
++          subresource.arrayLayer, 1};
++      region.srcOffset = {0, 0, 0};
++      region.dstSubresource = region.srcSubresource;
++      region.dstOffset = {0, 0, 0};
++      region.extent = image->info().extent;
++
++      EmitCs([cDstImage = commonTex->GetResolveImage(), cSrcImage = image,
++                 cRegion = region](DxvkContext *ctx) {
++        if (cRegion.srcSubresource.aspectMask !=
++            (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)) {
++          ctx->resolveImage(cDstImage, cSrcImage, cRegion, VK_FORMAT_UNDEFINED);
++        } else {
++          ctx->resolveDepthStencilImage(cDstImage, cSrcImage, cRegion,
++              VK_RESOLVE_MODE_AVERAGE_BIT_KHR, VK_RESOLVE_MODE_AVERAGE_BIT_KHR);
++        }
++      });
++    }
++  }
+ }
+diff --git a/src/d3d9/d3d9_device.h b/src/d3d9/d3d9_device.h
+index cec48291..8ce04e2b 100644
+--- a/src/d3d9/d3d9_device.h
++++ b/src/d3d9/d3d9_device.h
+@@ -1141,6 +1141,8 @@ namespace dxvk {
+ 
+     uint64_t GetCurrentSequenceNumber();
+ 
++    void ResolveImage(D3D9CommonTexture* commonTex);
++
+     Com<D3D9InterfaceEx>            m_parent;
+     D3DDEVTYPE                      m_deviceType;
+     HWND                            m_window;
+diff --git a/src/d3d9/d3d9_vr.cpp b/src/d3d9/d3d9_vr.cpp
+index cfcf5b38..8ed15b0c 100644
+--- a/src/d3d9/d3d9_vr.cpp
++++ b/src/d3d9/d3d9_vr.cpp
+@@ -52,7 +52,7 @@ namespace dxvk {
+             const auto *tex = surface->GetCommonTexture();
+ 
+             const auto &desc = tex->Desc();
+-            const auto &image = tex->GetImage();
++            const auto &image = desc->MultiSample != D3DMULTISAMPLE_NONE ? const_cast<D3D9CommonTexture*>(tex)->GetResolveImage() : tex->GetImage();
+             const auto &device = tex->Device()->GetDXVKDevice();
+ 
+             // I don't know why the image randomly is a uint64_t in OpenVR.
+-- 
+2.39.2.windows.1
+
