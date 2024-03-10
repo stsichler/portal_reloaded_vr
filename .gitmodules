@@ -2,3 +2,7 @@
 	path = dxvk
 	url = https://github.com/doitsujin/dxvk.git
 	branch = master
+[submodule "thirdparty/minhook"]
+	path = thirdparty/minhook
+	url = https://github.com/TsudaKageyu/minhook.git
+	branch = master

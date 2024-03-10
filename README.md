@@ -53,10 +53,11 @@ If the game is crashing, try:
 
 ## Build instructions
 1. Clone Repository
-2. Run ```dxvk-apply-patches.bat```
-2. Open l4d2vr.sln
-3. Set to x86 Debug or Release
-4. Build -> Build Solution
+2. Run ```git submodule update --init --recursive```
+3. Run ```dxvk-apply-patches.bat```
+4. Open l4d2vr.sln
+5. Set to x86 Debug or Release
+6. Build -> Build Solution
 
 Note: After building, it will attempt to copy the new d3d9.dll to your Portal 2/bin directory.
 
