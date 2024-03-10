@@ -1,17 +1,17 @@
 {
 	"source" : "builtin",
 	"applications": [{
-		"app_key": "steam.app.620",
+		"app_key": "steam.app.1255980",
 		
 		"launch_type": "url",
-		"url": "steam://launch/620/VR",
+		"url": "steam://launch/1255980/VR",
 		"action_manifest_path" : "SteamVRActionManifest/action_manifest.json",
-		"image_path" : "portal2vr_capsule_main.png",
+		"image_path" : "portal_reloaded_vr_capsule_main.png",
 
 		"strings": {
 			"en_us": {
-				"name": "Portal 2 VR",
-				"description": "Portal 2 VR Mod"
+				"name": "Portal Reloaded VR",
+				"description": "Portal Reloaded VR Mod"
 			}
 		}
 	}]
