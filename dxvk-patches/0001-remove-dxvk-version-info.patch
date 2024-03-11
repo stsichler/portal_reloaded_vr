@@ -1,0 +1,60 @@
+From 40f1fb35b4b6fdae1243e064869bc541b3c74db8 Mon Sep 17 00:00:00 2001
+From: Stefan Sichler <6442267+stsichler@users.noreply.github.com>
+Date: Mon, 11 Mar 2024 00:31:15 +0100
+Subject: [PATCH 1/5] remove dxvk version info
+
+---
+ src/dxvk/dxvk_instance.cpp     |  4 ++--
+ src/dxvk/hud/dxvk_hud_item.cpp | 10 +++++-----
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/src/dxvk/dxvk_instance.cpp b/src/dxvk/dxvk_instance.cpp
+index cffde93b..26ab1c90 100644
+--- a/src/dxvk/dxvk_instance.cpp
++++ b/src/dxvk/dxvk_instance.cpp
+@@ -1,4 +1,4 @@
+-#include <version.h>
++//#include <version.h>
+ 
+ #include "dxvk_instance.h"
+ #include "dxvk_openvr.h"
+@@ -18,7 +18,7 @@ namespace dxvk {
+ 
+   DxvkInstance::DxvkInstance(const DxvkInstanceImportInfo& args) {
+     Logger::info(str::format("Game: ", env::getExeName()));
+-    Logger::info(str::format("DXVK: ", DXVK_VERSION));
++//    Logger::info(str::format("DXVK: ", DXVK_VERSION));
+ 
+     m_config = Config::getUserConfig();
+     m_config.merge(Config::getAppConfig(env::getExePath()));
+diff --git a/src/dxvk/hud/dxvk_hud_item.cpp b/src/dxvk/hud/dxvk_hud_item.cpp
+index cbabd658..e8816147 100644
+--- a/src/dxvk/hud/dxvk_hud_item.cpp
++++ b/src/dxvk/hud/dxvk_hud_item.cpp
+@@ -1,7 +1,7 @@
+ #include "dxvk_hud_item.h"
+ 
+ #include <iomanip>
+-#include <version.h>
++//#include <version.h>
+ 
+ namespace dxvk::hud {
+ 
+@@ -88,10 +88,10 @@ namespace dxvk::hud {
+           HudPos            position) {
+     position.y += 16.0f;
+ 
+-    renderer.drawText(16.0f,
+-      { position.x, position.y },
+-      { 1.0f, 1.0f, 1.0f, 1.0f },
+-      "DXVK " DXVK_VERSION);
++    //renderer.drawText(16.0f,
++    //  { position.x, position.y },
++    //  { 1.0f, 1.0f, 1.0f, 1.0f },
++    //  "DXVK " DXVK_VERSION);
+ 
+     position.y += 8.0f;
+     return position;
+-- 
+2.39.0.windows.2
+

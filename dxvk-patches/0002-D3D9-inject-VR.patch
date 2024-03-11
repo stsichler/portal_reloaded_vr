@@ -1,7 +1,7 @@
-From 5bfe5ab1cda0c7930d5027ffbceda86810f3841b Mon Sep 17 00:00:00 2001
+From 05d099cdd116536d2089d07c40239a06b9bf9cff Mon Sep 17 00:00:00 2001
 From: Shane Davis <shane.davis1231@gmail.com>
 Date: Sun, 5 Jun 2022 16:08:54 -0700
-Subject: [PATCH 1/6] D3D9: inject VR
+Subject: [PATCH 2/5] D3D9: inject VR
 
 - override viewport to HMD resolution
 - create VR textures and update VR
@@ -23,7 +23,7 @@ Subject: [PATCH 1/6] D3D9: inject VR
  create mode 100644 src/d3d9/d3d9_vr.h
 
 diff --git a/README.md b/README.md
-index 8c02992a..f0769d5b 100644
+index 7cc7f787..e3b7d9ba 100644
 --- a/README.md
 +++ b/README.md
 @@ -1,5 +1,9 @@
@@ -37,10 +37,10 @@ index 8c02992a..f0769d5b 100644
  
  For the current status of the project, please refer to the [project wiki](https://github.com/doitsujin/dxvk/wiki).
 diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
-index 9dedb804..5afbfba8 100644
+index 7c14efa1..e2579017 100644
 --- a/src/d3d9/d3d9_device.cpp
 +++ b/src/d3d9/d3d9_device.cpp
-@@ -24,6 +24,11 @@
+@@ -25,6 +25,11 @@
  
  #include "d3d9_initializer.h"
  
@@ -52,7 +52,7 @@ index 9dedb804..5afbfba8 100644
  #include <algorithm>
  #include <cfloat>
  #ifdef MSC_VER
-@@ -354,6 +359,12 @@ namespace dxvk {
+@@ -437,6 +442,12 @@ namespace dxvk {
  
  
    HRESULT STDMETHODCALLTYPE D3D9DeviceEx::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
@@ -64,10 +64,10 @@ index 9dedb804..5afbfba8 100644
 +
      D3D9DeviceLock lock = LockDevice();
  
-     HRESULT hr = ResetSwapChain(pPresentationParameters, nullptr);
-@@ -479,6 +490,46 @@ namespace dxvk {
-       m_initializer->InitTexture(texture->GetCommonTexture(), initialData);
-       *ppTexture = texture.ref();
+     Logger::info("Device reset");
+@@ -603,6 +614,46 @@ namespace dxvk {
+       if (desc.Pool == D3DPOOL_DEFAULT)
+         m_losableResourceCounter++;
  
 +      if (g_Game && g_Game->m_VR && g_Game->m_VR->m_CreatingTextureID != VR::Texture_None)
 +      {
@@ -112,7 +112,7 @@ index 9dedb804..5afbfba8 100644
        return D3D_OK;
      }
      catch (const DxvkError& e) {
-@@ -1605,6 +1656,15 @@ namespace dxvk {
+@@ -1810,6 +1861,15 @@ namespace dxvk {
  
  
    HRESULT STDMETHODCALLTYPE D3D9DeviceEx::SetViewport(const D3DVIEWPORT9* pViewport) {
@@ -128,7 +128,7 @@ index 9dedb804..5afbfba8 100644
      D3D9DeviceLock lock = LockDevice();
  
      if (unlikely(ShouldRecord()))
-@@ -3453,12 +3513,22 @@ namespace dxvk {
+@@ -3686,12 +3746,22 @@ namespace dxvk {
            HWND hDestWindowOverride,
      const RGNDATA* pDirtyRegion,
            DWORD dwFlags) {
@@ -158,12 +158,12 @@ index 9dedb804..5afbfba8 100644
  
  
 diff --git a/src/d3d9/d3d9_interface.cpp b/src/d3d9/d3d9_interface.cpp
-index 43f14e89..9713399c 100644
+index 690e16d1..ed1e143c 100644
 --- a/src/d3d9/d3d9_interface.cpp
 +++ b/src/d3d9/d3d9_interface.cpp
-@@ -4,6 +4,9 @@
- #include "d3d9_caps.h"
- #include "d3d9_device.h"
+@@ -7,6 +7,9 @@
+ 
+ #include "../util/util_singleton.h"
  
 +#include "openvr.h"
 +#include "d3d9_vr.h"
@@ -171,7 +171,7 @@ index 43f14e89..9713399c 100644
  #include <algorithm>
  
  namespace dxvk {
-@@ -237,14 +240,38 @@ namespace dxvk {
+@@ -266,14 +269,38 @@ namespace dxvk {
            DWORD                  BehaviorFlags,
            D3DPRESENT_PARAMETERS* pPresentationParameters,
            IDirect3DDevice9**     ppReturnedDeviceInterface) {
@@ -437,5 +437,5 @@ index 00000000..b906cf78
 +    IDirect3DVR9 **pInterface);
 \ No newline at end of file
 -- 
-2.39.2.windows.1
+2.39.0.windows.2
 
