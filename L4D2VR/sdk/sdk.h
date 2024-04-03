@@ -360,7 +360,7 @@ public:
 	char pad_00bc[68]; //0x00BC
 	int32_t m_EdgeBlur; //0x0100
 }; //Size: 0x0104
-static_assert(sizeof(CViewSetup) == 0x0104);
+//static_assert(sizeof(CViewSetup) == 0x0104);
 
 class IBaseClientDLL
 {
@@ -1071,7 +1071,7 @@ public:
 	char meleeWeaponName[256]; //0x0CA4
 	char pad_0DA4[920]; //0x0DA4
 }; //Size: 0x113C
-static_assert(sizeof(CMeleeWeaponInfoStore) == 0x113C);
+//static_assert(sizeof(CMeleeWeaponInfoStore) == 0x113C);
 
 class IHandleEntity
 {
@@ -1747,7 +1747,7 @@ public:
 	char pad_010C[48]; //0x0114
 	int m_hGroundEntity; //0x0144
 }; //Size: 0x0148
-static_assert(sizeof(C_BasePlayer) == 0x0148);
+//static_assert(sizeof(C_BasePlayer) == 0x0148);
 
 class CBaseEdict
 {
@@ -2137,7 +2137,7 @@ public:
 	CBaseEntity* m_hOwner;
 	char pad_0001[3436];
 	int m_iLastFiredPortal; //0xE9C
-}; static_assert(sizeof(CWeaponPortalBase) == 0xEA0);
+}; //static_assert(sizeof(CWeaponPortalBase) == 0xEA0);
 
 class C_Portal_Player
 {

@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{c81ea18a-a8d0-40d2-900c-a91f736802d4}</ProjectGuid>
-    <RootNamespace>L4D2VR</RootNamespace>
+    <ProjectGuid>{52DF1B26-9778-40AE-98D7-288CC8236006}</ProjectGuid>
+    <RootNamespace>dxgi</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -72,21 +72,21 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>d3d11</TargetName>
+    <TargetName>dxgi</TargetName>
     <IncludePath>$(SolutionDir)thirdparty\minhook\include;$(SolutionDir)thirdparty\openvr\include;$(SolutionDir)dxvk\include;$(SolutionDir)dxvk\include\shaders;$(SolutionDir)dxvk\include\spirv\include;$(SolutionDir)dxvk\include\vulkan\include;$(SolutionDir)dxvk\src\d3d11;$(SolutionDir)dxvk\src\d3d11\shaders;$(SolutionDir)dxvk\src\d3d9;$(SolutionDir)dxvk\src\d3d9\shaders;$(SolutionDir)dxvk\subprojects\libdisplay-info\include;$(ProjectDir)sdk;$(ProjectDir);$(SolutionDir);$(IncludePath)</IncludePath>
     <ExecutablePath>$(ProjectDir)include;$(ExecutablePath)</ExecutablePath>
     <LibraryPath>$(SolutionDir)thirdparty\openvr\lib\win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <TargetName>d3d11</TargetName>
+    <TargetName>dxgi</TargetName>
     <IncludePath>$(SolutionDir)thirdparty\minhook\include;$(SolutionDir)thirdparty\openvr\include;$(SolutionDir)dxvk\include;$(SolutionDir)dxvk\include\shaders;$(SolutionDir)dxvk\include\spirv\include;$(SolutionDir)dxvk\include\vulkan\include;$(SolutionDir)dxvk\src\d3d11;$(SolutionDir)dxvk\src\d3d11\shaders;$(SolutionDir)dxvk\src\d3d9;$(SolutionDir)dxvk\src\d3d9\shaders;$(SolutionDir)dxvk\subprojects\libdisplay-info\include;$(ProjectDir)sdk;$(ProjectDir);$(SolutionDir);$(IncludePath)</IncludePath>
     <ExecutablePath>$(ProjectDir)include;$(ExecutablePath)</ExecutablePath>
     <LibraryPath>$(SolutionDir)thirdparty\openvr\lib\win32;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <TargetName>d3d11</TargetName>
+    <TargetName>dxgi</TargetName>
     <IncludePath>$(SolutionDir)thirdparty\minhook\include;$(SolutionDir)thirdparty\openvr\include;$(SolutionDir)dxvk\include;$(SolutionDir)dxvk\include\shaders;$(SolutionDir)dxvk\include\spirv\include;$(SolutionDir)dxvk\include\vulkan\include;$(SolutionDir)dxvk\src\d3d11;$(SolutionDir)dxvk\src\d3d11\shaders;$(SolutionDir)dxvk\src\d3d9;$(SolutionDir)dxvk\src\d3d9\shaders;$(SolutionDir)dxvk\subprojects\libdisplay-info\include;$(ProjectDir)sdk;$(ProjectDir);$(SolutionDir);$(IncludePath)</IncludePath>
     <ExecutablePath>$(ProjectDir)include;$(ExecutablePath)</ExecutablePath>
     <LibraryPath>$(SolutionDir)thirdparty\openvr\lib\win64;$(LibraryPath)</LibraryPath>
@@ -95,7 +95,7 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(SolutionDir)thirdparty\minhook\include;$(SolutionDir)thirdparty\openvr\include;$(SolutionDir)dxvk\include;$(SolutionDir)dxvk\include\shaders;$(SolutionDir)dxvk\include\spirv\include;$(SolutionDir)dxvk\include\vulkan\include;$(SolutionDir)dxvk\src\d3d11;$(SolutionDir)dxvk\src\d3d11\shaders;$(SolutionDir)dxvk\src\d3d9;$(SolutionDir)dxvk\src\d3d9\shaders;$(SolutionDir)dxvk\subprojects\libdisplay-info\include;$(ProjectDir)sdk;$(ProjectDir);$(SolutionDir);$(IncludePath)</IncludePath>
     <ExecutablePath>$(ProjectDir)include;$(ExecutablePath)</ExecutablePath>
-    <TargetName>d3d11</TargetName>
+    <TargetName>dxgi</TargetName>
     <LibraryPath>$(SolutionDir)thirdparty\openvr\lib\win64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -120,7 +120,7 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\d3d11\d3d11.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\dxgi\dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "C:\Program Files (x86)\Steam\steamapps\common\Portal 2\bin\$(TargetName)$(TargetExt)"</Command>
@@ -150,7 +150,7 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\d3d11\d3d11.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\dxgi\dxgi.def</ModuleDefinitionFile>
     </Link>
     <PostBuildEvent>
       <Command>copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "C:\Program Files (x86)\Steam\steamapps\common\Portal 2\bin\$(TargetName)$(TargetExt)"</Command>
@@ -177,7 +177,7 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\d3d11\d3d11.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\dxgi\dxgi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -205,7 +205,7 @@
       <EnableUAC>false</EnableUAC>
       <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\d3d11\d3d11.def</ModuleDefinitionFile>
+      <ModuleDefinitionFile>$(SolutionDir)dxvk\src\dxgi\dxgi.def</ModuleDefinitionFile>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -266,65 +266,6 @@
     <ClInclude Include="..\dxvk\include\vulkan\vulkan.h" />
     <ClInclude Include="..\dxvk\include\vulkan\vulkan_core.h" />
     <ClInclude Include="..\dxvk\include\vulkan\vulkan_win32.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_blend.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_buffer.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_depth_stencil.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_device.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_include.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_input_layout.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_multithread.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_query.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_rasterizer.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_sampler.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_shader.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_texture.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_util.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_view_dsv.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_view_rtv.h" />
-    <ClInclude Include="..\dxvk\src\d3d10\d3d10_view_srv.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_annotation.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_blend.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_buffer.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_class_linkage.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_cmd.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_cmdlist.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_context.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_context_def.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_context_ext.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_context_imm.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_context_state.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_cuda.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_depth_stencil.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_device.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_device_child.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_enums.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_features.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_fence.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_gdi.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_include.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_initializer.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_input_layout.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_interfaces.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_interop.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_on_12.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_on_12_interfaces.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_options.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_query.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_rasterizer.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_resource.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_sampler.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_shader.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_state.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_state_object.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_swapchain.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_texture.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_util.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_video.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_view.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_view_dsv.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_view_rtv.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_view_srv.h" />
-    <ClInclude Include="..\dxvk\src\d3d11\d3d11_view_uav.h" />
     <ClInclude Include="..\dxvk\src\d3d9\d3d9_fixed_function.h" />
     <ClInclude Include="..\dxvk\src\dxbc\dxbc_analysis.h" />
     <ClInclude Include="..\dxvk\src\dxbc\dxbc_chunk_isgn.h" />
@@ -495,8 +436,6 @@
     <ClInclude Include="..\dxvk\src\wsi\wsi_platform.h" />
     <ClInclude Include="..\dxvk\src\wsi\wsi_window.h" />
     <ClInclude Include="..\dxvk\tests\test_utils.h" />
-    <ClInclude Include="game.h" />
-    <ClInclude Include="hooks.h" />
     <ClInclude Include="offsets.h" />
     <ClInclude Include="sdk\bitbuf.h" />
     <ClInclude Include="sdk\checksum_crc.h" />
@@ -512,62 +451,9 @@
     <ClInclude Include="sdk\trace.h" />
     <ClInclude Include="sdk\vector.h" />
     <ClInclude Include="sigscanner.h" />
-    <ClInclude Include="vr.h" />
     <ClInclude Include="sdk\worldsize.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_blend.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_buffer.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_core.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_depth_stencil.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_device.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_input_layout.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_multithread.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_query.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_rasterizer.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_sampler.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_texture.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_util.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_view_dsv.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_view_rtv.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d10\d3d10_view_srv.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_annotation.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_blend.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_buffer.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_class_linkage.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_cmdlist.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_context.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_context_def.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_context_ext.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_context_imm.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_cuda.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_depth_stencil.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_device.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_enums.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_features.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_fence.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_gdi.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_initializer.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_input_layout.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_interop.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_main.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_on_12.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_options.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_query.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_rasterizer.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_resource.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_sampler.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_shader.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_state.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_state_object.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_swapchain.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_texture.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_util.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_video.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_view_dsv.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_view_rtv.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_view_srv.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d11\d3d11_view_uav.cpp" />
     <ClCompile Include="..\dxvk\src\d3d9\d3d9_fixed_function.cpp" />
     <ClCompile Include="..\dxvk\src\dxbc\dxbc_analysis.cpp" />
     <ClCompile Include="..\dxvk\src\dxbc\dxbc_chunk_isgn.cpp" />
@@ -586,6 +472,7 @@
     <ClCompile Include="..\dxvk\src\dxgi\dxgi_enums.cpp" />
     <ClCompile Include="..\dxvk\src\dxgi\dxgi_factory.cpp" />
     <ClCompile Include="..\dxvk\src\dxgi\dxgi_format.cpp" />
+    <ClCompile Include="..\dxvk\src\dxgi\dxgi_main.cpp" />
     <ClCompile Include="..\dxvk\src\dxgi\dxgi_monitor.cpp" />
     <ClCompile Include="..\dxvk\src\dxgi\dxgi_options.cpp" />
     <ClCompile Include="..\dxvk\src\dxgi\dxgi_output.cpp" />
@@ -682,22 +569,18 @@
     <ClCompile Include="..\dxvk\src\wsi\win32\wsi_monitor_win32.cpp" />
     <ClCompile Include="..\dxvk\src\wsi\win32\wsi_window_win32.cpp" />
     <ClCompile Include="..\dxvk\src\wsi\wsi_edid.cpp" />
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="game.cpp" />
-    <ClCompile Include="hooks.cpp" />
     <ClCompile Include="sdk\bitbuf.cpp" />
     <ClCompile Include="sdk\checksum_crc.cpp" />
     <ClCompile Include="sdk\newbitbuf.cpp" />
-    <ClCompile Include="vr.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\dxvk\lib32\libd3dcompiler_43.def" />
     <None Include="..\dxvk\lib\libd3dcompiler_43.def" />
-    <None Include="..\dxvk\src\d3d11\d3d11.def" />
-    <None Include="..\dxvk\src\d3d11\d3d11.sym" />
+    <None Include="..\dxvk\src\dxgi\dxgi.def" />
+    <None Include="..\dxvk\src\dxgi\dxgi.sym" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="..\dxvk\src\d3d11\version.rc" />
+    <ResourceCompile Include="..\dxvk\src\dxgi\version.rc" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="config.txt" />
@@ -708,9 +591,6 @@
     </ProjectReference>
     <ProjectReference Include="..\thirdparty\minhook\build\VC17\libMinHook.vcxproj">
       <Project>{f142a341-5ee0-442d-a15f-98ae9b48dbae}</Project>
-    </ProjectReference>
-    <ProjectReference Include="dxgi.vcxproj">
-      <Project>{52df1b26-9778-40ae-98d7-288cc8236006}</Project>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

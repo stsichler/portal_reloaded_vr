@@ -1,7 +1,7 @@
-From 05d099cdd116536d2089d07c40239a06b9bf9cff Mon Sep 17 00:00:00 2001
+From b6f5fb63e0aad13fcb75baa3b0bfe9f1fddb3bd5 Mon Sep 17 00:00:00 2001
 From: Shane Davis <shane.davis1231@gmail.com>
 Date: Sun, 5 Jun 2022 16:08:54 -0700
-Subject: [PATCH 2/5] D3D9: inject VR
+Subject: [PATCH 2/6] D3D9: inject VR
 
 - override viewport to HMD resolution
 - create VR textures and update VR
@@ -437,5 +437,5 @@ index 00000000..b906cf78
 +    IDirect3DVR9 **pInterface);
 \ No newline at end of file
 -- 
-2.39.0.windows.2
+2.34.1
 

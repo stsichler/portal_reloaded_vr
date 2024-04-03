@@ -57,7 +57,7 @@ public:
     IModelRender* m_ModelRender = nullptr;
     IInput* m_VguiInput = nullptr;
     ISurface* m_VguiSurface = nullptr;
-    IClientMode* m_ClientMode = nullptr;
+//    IClientMode* m_ClientMode = nullptr;
 
     uintptr_t m_BaseEngine;
     uintptr_t m_BaseClient;

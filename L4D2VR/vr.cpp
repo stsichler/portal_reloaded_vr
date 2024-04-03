@@ -13,7 +13,7 @@
 #include <thread>
 #include <type_traits>
 #include <algorithm>
-#include <d3d9_vr.h>
+//#include <d3d11_vr.h>
 
 VR::VR(Game *game) 
 {
@@ -75,36 +75,36 @@ VR::VR(Game *game)
     std::thread configParser(&VR::WaitForConfigUpdate, this);
     configParser.detach();
 
-    while (!g_D3DVR9) 
-        Sleep(10);
+   // while (!g_D3DVR11) 
+   //     Sleep(10);
 
-    g_D3DVR9->GetBackBufferData(&m_VKBackBuffer);
-    m_Overlay = vr::VROverlay();
-    m_Overlay->CreateOverlay("MenuOverlayKey", "MenuOverlay", &m_MainMenuHandle);
-    //m_Overlay->CreateOverlay("HUDOverlayKey", "HUDOverlay", &m_HUDHandle);
-    m_Overlay->SetOverlayInputMethod(m_MainMenuHandle, vr::VROverlayInputMethod_Mouse);
-   // m_Overlay->SetOverlayInputMethod(m_HUDHandle, vr::VROverlayInputMethod_Mouse);
-    m_Overlay->SetOverlayFlag(m_MainMenuHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
-    //m_Overlay->SetOverlayFlag(m_HUDHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
+   // g_D3DVR11->GetBackBufferData(&m_VKBackBuffer);
+   // m_Overlay = vr::VROverlay();
+   // m_Overlay->CreateOverlay("MenuOverlayKey", "MenuOverlay", &m_MainMenuHandle);
+   // //m_Overlay->CreateOverlay("HUDOverlayKey", "HUDOverlay", &m_HUDHandle);
+   // m_Overlay->SetOverlayInputMethod(m_MainMenuHandle, vr::VROverlayInputMethod_Mouse);
+   //// m_Overlay->SetOverlayInputMethod(m_HUDHandle, vr::VROverlayInputMethod_Mouse);
+   // m_Overlay->SetOverlayFlag(m_MainMenuHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
+   // //m_Overlay->SetOverlayFlag(m_HUDHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
 
-    int windowWidth, windowHeight;
-    m_Game->m_MaterialSystem->GetRenderContext()->GetWindowSize(windowWidth, windowHeight);
+   // int windowWidth, windowHeight;
+   // m_Game->m_MaterialSystem->GetRenderContext()->GetWindowSize(windowWidth, windowHeight);
 
-    //const vr::HmdVector2_t mouseScaleHUD = {windowWidth, windowHeight};
-    //m_Overlay->SetOverlayMouseScale(m_HUDHandle, &mouseScaleHUD);
+   // //const vr::HmdVector2_t mouseScaleHUD = {windowWidth, windowHeight};
+   // //m_Overlay->SetOverlayMouseScale(m_HUDHandle, &mouseScaleHUD);
 
-    const vr::HmdVector2_t mouseScaleMenu = {m_RenderWidth, m_RenderHeight};
-    m_Overlay->SetOverlayCurvature(m_MainMenuHandle, 0.15f);
-    m_Overlay->SetOverlayMouseScale(m_MainMenuHandle, &mouseScaleMenu);
+   // const vr::HmdVector2_t mouseScaleMenu = {m_RenderWidth, m_RenderHeight};
+   // m_Overlay->SetOverlayCurvature(m_MainMenuHandle, 0.15f);
+   // m_Overlay->SetOverlayMouseScale(m_MainMenuHandle, &mouseScaleMenu);
 
-    vr::VRCompositor()->SetTrackingSpace(m_SeatedMode 
-        ? vr::TrackingUniverseSeated
-        : vr::TrackingUniverseStanding);
+   // vr::VRCompositor()->SetTrackingSpace(m_SeatedMode 
+   //     ? vr::TrackingUniverseSeated
+   //     : vr::TrackingUniverseStanding);
 
-    UpdatePosesAndActions();
+   // UpdatePosesAndActions();
+   // m_IsVREnabled = true;
 
     m_IsInitialized = true;
-    m_IsVREnabled = true;
 }
 
 int VR::SetActionManifest(const char *fileName) 
@@ -190,7 +190,7 @@ void VR::Update()
 
     
 
-    if (m_IsVREnabled && g_D3DVR9)
+    if (m_IsVREnabled)
     {
         bool inGame = m_Game->m_EngineClient->IsInGame();
 

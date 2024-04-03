@@ -1,7 +1,7 @@
-From 76a64006b4350f8665af528a2e24c4cffe836f89 Mon Sep 17 00:00:00 2001
+From f9c045167795e30b5e985d8bd8a3d9db2c6eeff0 Mon Sep 17 00:00:00 2001
 From: Holger Frydrych <holger@frydrych.org>
 Date: Sun, 17 Sep 2023 09:34:30 +0200
-Subject: [PATCH 4/5] add antialiasing in VR
+Subject: [PATCH 4/6] add antialiasing in VR
 
 ---
  src/d3d9/d3d9_common_texture.cpp |  5 +-
@@ -233,5 +233,5 @@ index cfcf5b38..8ed15b0c 100644
  
              // I don't know why the image randomly is a uint64_t in OpenVR.
 -- 
-2.39.0.windows.2
+2.34.1
 

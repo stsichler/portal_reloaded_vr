@@ -31,12 +31,12 @@ Game::Game()
     m_VguiInput = (IInput *)GetInterface("vgui2.dll", "VGUI_InputInternal001");
     m_VguiSurface = (ISurface *)GetInterface("vguimatsurface.dll", "VGUI_Surface031");
 
-    m_Offsets = new Offsets();
+//    m_Offsets = new Offsets();
 
-    m_ClientMode = **(IClientMode***)(m_Offsets->g_pClientMode.address);
+//    m_ClientMode = **(IClientMode***)(m_Offsets->g_pClientMode.address);
 
-    m_VR = new VR(this);
-    m_Hooks = new Hooks(this);
+//    m_VR = new VR(this);
+//    m_Hooks = new Hooks(this);
 
     m_Initialized = true;
 }

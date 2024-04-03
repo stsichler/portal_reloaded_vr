@@ -12,6 +12,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libMinHook", "thirdparty\mi
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libdisplay-info", "thirdparty\libdisplay-info\libdisplay-info.vcxproj", "{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dxgi", "L4D2VR\dxgi.vcxproj", "{52DF1B26-9778-40AE-98D7-288CC8236006}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -44,6 +46,14 @@ Global
 		{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}.Release|x64.Build.0 = Release|x64
 		{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}.Release|x86.ActiveCfg = Release|Win32
 		{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}.Release|x86.Build.0 = Release|Win32
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Debug|x64.ActiveCfg = Debug|x64
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Debug|x64.Build.0 = Debug|x64
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Debug|x86.ActiveCfg = Debug|Win32
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Debug|x86.Build.0 = Debug|Win32
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Release|x64.ActiveCfg = Release|x64
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Release|x64.Build.0 = Release|x64
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Release|x86.ActiveCfg = Release|Win32
+		{52DF1B26-9778-40AE-98D7-288CC8236006}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

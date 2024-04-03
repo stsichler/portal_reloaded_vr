@@ -1,7 +1,7 @@
-From 07f16dfac9a66d32f3e2acc34d03e318227310fe Mon Sep 17 00:00:00 2001
+From 62b881d035827d1e85c771eb0d9809ec35a92011 Mon Sep 17 00:00:00 2001
 From: Holger Frydrych <holger@frydrych.org>
 Date: Sun, 17 Sep 2023 13:40:17 +0200
-Subject: [PATCH 5/5] Ensure dxvk loads all required Vulkan extensions for
+Subject: [PATCH 5/6] Ensure dxvk loads all required Vulkan extensions for
  OpenVR support
 
 ---
@@ -37,5 +37,5 @@ index c0ee42d7..9b29cc84 100644
      m_loadedOvrApi = handle != nullptr;
      return handle;
 -- 
-2.39.0.windows.2
+2.34.1
 

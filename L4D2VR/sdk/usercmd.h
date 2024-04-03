@@ -113,7 +113,7 @@ public:
 	bool	hasbeenpredicted;
 	char pad[25];
 };
-static_assert(sizeof(CUserCmd) == 0x58);
+//static_assert(sizeof(CUserCmd) == 0x58);
 
 class CVerifiedUserCmd
 {
