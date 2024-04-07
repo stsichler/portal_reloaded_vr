@@ -18,7 +18,10 @@
 VR::VR(Game *game) 
 {
     m_Game = game;
+}
 
+void VR::init()
+{
     char errorString[MAX_STR_LEN];
 
     vr::HmdError error = vr::VRInitError_None;
@@ -105,6 +108,10 @@ VR::VR(Game *game)
    // m_IsVREnabled = true;
 
     m_IsInitialized = true;
+}
+
+void VR::initDxvkCallbacks()
+{
 }
 
 int VR::SetActionManifest(const char *fileName) 

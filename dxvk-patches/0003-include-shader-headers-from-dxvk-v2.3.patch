@@ -1,7 +1,7 @@
-From 995e207bfeaea2481799fa89195d6461960d031f Mon Sep 17 00:00:00 2001
+From 461f029bfefe1ef91b245f62f099e8877f06e928 Mon Sep 17 00:00:00 2001
 From: Shane Davis <shane.davis1231@gmail.com>
 Date: Sun, 5 Jun 2022 18:21:09 -0700
-Subject: [PATCH 3/6] include shader headers from dxvk v2.3
+Subject: [PATCH 3/5] include shader headers from dxvk v2.3
 
 ---
  include/shaders/d3d9_convert_a2w10v10u10.h   | 134 ++++++++++++
@@ -4788,5 +4788,9 @@ index 00000000..afe36a4c
 +	0x0000001d,0x000200fe,0x0000001e,0x00010038
 +};
 -- 
+<<<<<<< HEAD
 2.34.1
+=======
+2.39.2.windows.1
+>>>>>>> e87197b (moved VR injection to L4D2VR, make changes to dxvk as minimalistic as possible)
 

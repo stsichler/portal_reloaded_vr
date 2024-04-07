@@ -9,6 +9,9 @@
 
 Game::Game()
 {
+    m_VR = new VR(this);
+    m_VR->initDxvkCallbacks();
+
     while (!(m_BaseClient = (uintptr_t)GetModuleHandle("client.dll")))
         Sleep(50);
     while (!(m_BaseEngine = (uintptr_t)GetModuleHandle("engine.dll")))
@@ -35,7 +38,7 @@ Game::Game()
 
 //    m_ClientMode = **(IClientMode***)(m_Offsets->g_pClientMode.address);
 
-//    m_VR = new VR(this);
+//    m_VR->init();
 //    m_Hooks = new Hooks(this);
 
     m_Initialized = true;
