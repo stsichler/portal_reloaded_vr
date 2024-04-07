@@ -195,9 +195,6 @@
     <ClInclude Include="..\dxvk\src\d3d9\d3d9_volume.h">
       <Filter>dxvk</Filter>
     </ClInclude>
-    <ClInclude Include="..\dxvk\src\d3d9\d3d9_vr.h">
-      <Filter>dxvk</Filter>
-    </ClInclude>
     <ClInclude Include="..\dxvk\src\d3d9\shaders\d3d9_convert_common.h">
       <Filter>dxvk</Filter>
     </ClInclude>
@@ -876,6 +873,9 @@
     <ClInclude Include="..\dxvk\src\wsi\wsi_window.h">
       <Filter>dxvk</Filter>
     </ClInclude>
+    <ClInclude Include="d3d9_vr.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -981,9 +981,6 @@
       <Filter>dxvk</Filter>
     </ClCompile>
     <ClCompile Include="..\dxvk\src\d3d9\d3d9_volume.cpp">
-      <Filter>dxvk</Filter>
-    </ClCompile>
-    <ClCompile Include="..\dxvk\src\d3d9\d3d9_vr.cpp">
       <Filter>dxvk</Filter>
     </ClCompile>
     <ClCompile Include="..\dxvk\src\dxbc\dxbc_analysis.cpp">
@@ -1321,6 +1318,9 @@
     </ClCompile>
     <ClCompile Include="..\dxvk\src\wsi\wsi_edid.cpp">
       <Filter>dxvk</Filter>
+    </ClCompile>
+    <ClCompile Include="d3d9_vr.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

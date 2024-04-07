@@ -1,4 +1,4 @@
-From a6f3095538e84c31a06416b0b53bcce66c27fdca Mon Sep 17 00:00:00 2001
+From 461f029bfefe1ef91b245f62f099e8877f06e928 Mon Sep 17 00:00:00 2001
 From: Shane Davis <shane.davis1231@gmail.com>
 Date: Sun, 5 Jun 2022 18:21:09 -0700
 Subject: [PATCH 3/5] include shader headers from dxvk v2.3
@@ -4788,5 +4788,5 @@ index 00000000..afe36a4c
 +	0x0000001d,0x000200fe,0x0000001e,0x00010038
 +};
 -- 
-2.39.0.windows.2
+2.39.2.windows.1
 

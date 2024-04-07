@@ -13,12 +13,56 @@
 #include <thread>
 #include <type_traits>
 #include <algorithm>
+#include <d3d9_device.h>
+#include <d3d9_texture.h>
 #include <d3d9_vr.h>
+
+#include <functional>
+
+namespace
+{
+    D3DMULTISAMPLE_TYPE MapToMultisampleType(int numSamples)
+    {
+        switch (numSamples)
+        {
+        case 16:
+            return D3DMULTISAMPLE_16_SAMPLES;
+        case 8:
+            return D3DMULTISAMPLE_8_SAMPLES;
+        case 4:
+            return D3DMULTISAMPLE_4_SAMPLES;
+        case 2:
+            return D3DMULTISAMPLE_2_SAMPLES;
+        default:
+            return D3DMULTISAMPLE_NONE;
+        }
+    }
+}
+
+namespace dxvk
+{
+    extern std::function<void(D3DPRESENT_PARAMETERS* pPresentationParameters)> D3D9InterfaceEx_CreateDevice_Pre_Callback;
+    extern std::function<void(IDirect3DDevice9* pDevice)> D3D9InterfaceEx_CreateDevice_Post_Callback;
+
+    extern std::function<void(D3DPRESENT_PARAMETERS* pPresentationParameters)> D3D9DeviceEx_Reset_Callback;
+
+    extern std::function<void(D3D9_COMMON_TEXTURE_DESC& desc)> D3D9DeviceEx_CreateTexture_Pre_Callback;
+    extern std::function<void(const Com<D3D9Texture2D>& texture)> D3D9DeviceEx_CreateTexture_Post_Callback;
+
+    extern std::function<void(D3D9_COMMON_TEXTURE_DESC& desc)> D3D9DeviceEx_CreateDepthStencilSurfaceEx_Pre_Callback;
+
+    extern std::function<void(const D3DVIEWPORT9* pViewport)> D3D9DeviceEx_SetViewport_Callback;
+
+    extern std::function<void(D3D9DeviceEx* pDevice)> D3D9DeviceEx_PresentEx_Callback;
+}
 
 VR::VR(Game *game) 
 {
     m_Game = game;
+}
 
+void VR::init()
+{
     char errorString[MAX_STR_LEN];
 
     vr::HmdError error = vr::VRInitError_None;
@@ -105,6 +149,127 @@ VR::VR(Game *game)
 
     m_IsInitialized = true;
     m_IsVREnabled = true;
+}
+
+void VR::initDxvkCallbacks()
+{
+    dxvk::D3D9InterfaceEx_CreateDevice_Pre_Callback = [this](D3DPRESENT_PARAMETERS* pPresentationParameters)
+        {
+            vr::HmdError error = vr::VRInitError_None;
+            vr::IVRSystem* system = vr::VR_Init(&error, vr::VRApplication_Scene);
+
+            if (error == vr::VRInitError_None)
+            {
+                // Override viewport size
+                uint32_t renderWidth, renderHeight;
+                system->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
+                pPresentationParameters->BackBufferWidth = renderWidth;
+                pPresentationParameters->BackBufferHeight = renderHeight;
+            }
+            else
+            {
+                char errorString[256];
+                snprintf(errorString, 256, "VR_Init failed: %s", vr::VR_GetVRInitErrorAsEnglishDescription(error));
+                MessageBox(0, errorString, "DXVK", MB_ICONERROR | MB_OK);
+                ExitProcess(0);
+            }
+        };
+
+    dxvk::D3D9InterfaceEx_CreateDevice_Post_Callback = [this](IDirect3DDevice9* pDevice)
+        {
+            Direct3DCreateVRImpl(pDevice, &g_D3DVR9);
+        };
+
+    dxvk::D3D9DeviceEx_Reset_Callback = [this](D3DPRESENT_PARAMETERS* pPresentationParameters)
+        {
+            pPresentationParameters->BackBufferWidth = m_RenderWidth;
+            pPresentationParameters->BackBufferHeight = m_RenderHeight;
+        };
+
+    dxvk::D3D9DeviceEx_CreateTexture_Pre_Callback = [this](dxvk::D3D9_COMMON_TEXTURE_DESC& desc)
+    {
+        if (m_CreatingTextureID == VR::Texture_LeftEye || m_CreatingTextureID == VR::Texture_RightEye)
+        {
+            dxvk::Logger::info(dxvk::str::format("Creating texture with MSAA ", m_AntiAliasing));
+            desc.MultiSample = MapToMultisampleType(m_AntiAliasing);
+        }
+    };
+
+    dxvk::D3D9DeviceEx_CreateTexture_Post_Callback = [this](const dxvk::Com<dxvk::D3D9Texture2D>& texture)
+        {
+            if (m_CreatingTextureID != VR::Texture_None)
+            {
+                vr::VRVulkanTextureData_t vulkanData;
+                memset(&vulkanData, 0, sizeof(vr::VRVulkanTextureData_t));
+
+                SharedTextureHolder* textureTarget;
+                D3D9_TEXTURE_VR_DESC texDesc;
+                VR::TextureID texID = m_CreatingTextureID;
+
+                if (texID == VR::Texture_LeftEye)
+                {
+                    textureTarget = &m_VKLeftEye;
+                    texture.ref()->GetSurfaceLevel(0, &m_D9LeftEyeSurface);
+                    g_D3DVR9->GetVRDesc(m_D9LeftEyeSurface, &texDesc);
+                }
+                else if (texID == VR::Texture_RightEye)
+                {
+                    textureTarget = &m_VKRightEye;
+                    texture.ref()->GetSurfaceLevel(0, &m_D9RightEyeSurface);
+                    g_D3DVR9->GetVRDesc(m_D9RightEyeSurface, &texDesc);
+                }
+                else if (texID == VR::Texture_HUD)
+                {
+                    textureTarget = &m_VKHUD;
+                    texture.ref()->GetSurfaceLevel(0, &m_D9HUDSurface);
+                    g_D3DVR9->GetVRDesc(m_D9HUDSurface, &texDesc);
+                }
+                else if (texID == VR::Texture_Blank)
+                {
+                    textureTarget = &m_VKBlankTexture;
+                    texture.ref()->GetSurfaceLevel(0, &m_D9BlankSurface);
+                    g_D3DVR9->GetVRDesc(m_D9BlankSurface, &texDesc);
+                }
+
+                memcpy(&textureTarget->m_VulkanData, &texDesc, sizeof(vr::VRVulkanTextureData_t));
+                textureTarget->m_VRTexture.handle = &textureTarget->m_VulkanData;
+                textureTarget->m_VRTexture.eColorSpace = vr::ColorSpace_Auto;
+                textureTarget->m_VRTexture.eType = vr::TextureType_Vulkan;
+            }
+        };
+
+    dxvk::D3D9DeviceEx_SetViewport_Callback = [this](const D3DVIEWPORT9* pViewport)
+        {
+            // TODO: Overriding the viewport in-game will mess up the shadows, so only do it in the menu for now.
+            if (m_IsInitialized && !m_Game->m_EngineClient->IsInGame())
+            {
+                D3DVIEWPORT9* newViewport = const_cast<D3DVIEWPORT9*>(pViewport);
+                newViewport->Width = m_RenderWidth;
+                newViewport->Height = m_RenderHeight;
+            }
+        };
+
+    dxvk::D3D9DeviceEx_CreateDepthStencilSurfaceEx_Pre_Callback = [this](dxvk::D3D9_COMMON_TEXTURE_DESC& desc)
+        {
+            if (m_CreatingTextureID == VR::Texture_LeftEye || m_CreatingTextureID == VR::Texture_RightEye)
+            {
+                dxvk::Logger::info(dxvk::str::format("Creating depth/stencil surface with MSAA ", m_AntiAliasing));
+                desc.MultiSample = MapToMultisampleType(m_AntiAliasing);
+            }
+        };
+
+    dxvk::D3D9DeviceEx_PresentEx_Callback = [this](dxvk::D3D9DeviceEx* pDevice)
+        {
+            if (m_CreatedVRTextures) {
+                pDevice->ResolveImage(dxvk::GetCommonTexture(m_D9LeftEyeSurface));
+                pDevice->ResolveImage(dxvk::GetCommonTexture(m_D9RightEyeSurface));
+            }
+
+            if (m_IsVREnabled && g_D3DVR9)
+                g_D3DVR9->WaitDeviceIdle();
+            
+            Update();
+        };
 }
 
 int VR::SetActionManifest(const char *fileName) 

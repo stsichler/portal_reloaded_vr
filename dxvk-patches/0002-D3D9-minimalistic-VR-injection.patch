@@ -1,0 +1,159 @@
+From 4bf1e3608b429880805ee7e3f99356d6735992b6 Mon Sep 17 00:00:00 2001
+From: Shane Davis <shane.davis1231@gmail.com>
+Date: Sun, 5 Jun 2022 16:08:54 -0700
+Subject: [PATCH 2/5] D3D9: minimalistic VR injection
+
+- override viewport to HMD resolution
+- create VR textures and update VR
+- override viewport in menu
+- exit if VR init fails
+- override resolution when attempting to change it
+- add function for getting backbuffer data
+- handle HUD texture creation
+- handle blank texture creation
+- update readme
+---
+ README.md                   |  4 ++++
+ src/d3d9/d3d9_device.cpp    | 33 +++++++++++++++++++++++++++------
+ src/d3d9/d3d9_interface.cpp | 14 +++++++++++++-
+ 3 files changed, 44 insertions(+), 7 deletions(-)
+
+diff --git a/README.md b/README.md
+index 7cc7f787..e3b7d9ba 100644
+--- a/README.md
++++ b/README.md
+@@ -1,5 +1,9 @@
+ # DXVK
+ 
++Slightly modified for L4D2VR.
++
++Thanks to [TheIronWolfModding](https://github.com/TheIronWolfModding/dxvk/tree/vr-dx9-rel) and [DrBeef](https://github.com/DrBeef/dxvk)
++
+ A Vulkan-based translation layer for Direct3D 9/10/11 which allows running 3D applications on Linux using Wine.
+ 
+ For the current status of the project, please refer to the [project wiki](https://github.com/doitsujin/dxvk/wiki).
+diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+index 7c14efa1..aad67482 100644
+--- a/src/d3d9/d3d9_device.cpp
++++ b/src/d3d9/d3d9_device.cpp
+@@ -435,8 +435,13 @@ namespace dxvk {
+     return 1;
+   }
+ 
++  std::function<void(D3DPRESENT_PARAMETERS* pPresentationParameters)> D3D9DeviceEx_Reset_Callback;
+ 
+   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::Reset(D3DPRESENT_PARAMETERS* pPresentationParameters) {
++
++    if (D3D9DeviceEx_Reset_Callback)
++        D3D9DeviceEx_Reset_Callback(pPresentationParameters);
++
+     D3D9DeviceLock lock = LockDevice();
+ 
+     Logger::info("Device reset");
+@@ -545,6 +550,7 @@ namespace dxvk {
+     m_implicitSwapchain->GetGammaRamp(pRamp);
+   }
+ 
++  std::function<void(const Com<D3D9Texture2D>& texture)> D3D9DeviceEx_CreateTexture_Callback;
+ 
+   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::CreateTexture(
+           UINT                Width,
+@@ -603,6 +609,9 @@ namespace dxvk {
+       if (desc.Pool == D3DPOOL_DEFAULT)
+         m_losableResourceCounter++;
+ 
++      if (D3D9DeviceEx_CreateTexture_Callback)
++          D3D9DeviceEx_CreateTexture_Callback(texture);
++
+       return D3D_OK;
+     }
+     catch (const DxvkError& e) {
+@@ -1808,8 +1817,13 @@ namespace dxvk {
+     return D3D_OK;
+   }
+ 
++  std::function<void(const D3DVIEWPORT9* pViewport)> D3D9DeviceEx_SetViewport_Callback;
+ 
+   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::SetViewport(const D3DVIEWPORT9* pViewport) {
++
++      if (D3D9DeviceEx_SetViewport_Callback)
++          D3D9DeviceEx_SetViewport_Callback(pViewport);
++
+     D3D9DeviceLock lock = LockDevice();
+ 
+     if (unlikely(ShouldRecord()))
+@@ -3679,6 +3693,7 @@ namespace dxvk {
+     return D3D_OK;
+   }
+ 
++  std::function<void()> D3D9DeviceEx_PresentEx_Callback;
+ 
+   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::PresentEx(
+     const RECT* pSourceRect,
+@@ -3686,12 +3701,18 @@ namespace dxvk {
+           HWND hDestWindowOverride,
+     const RGNDATA* pDirtyRegion,
+           DWORD dwFlags) {
+-    return m_implicitSwapchain->Present(
+-      pSourceRect,
+-      pDestRect,
+-      hDestWindowOverride,
+-      pDirtyRegion,
+-      dwFlags);
++    
++	HRESULT result = m_implicitSwapchain->Present(
++    pSourceRect,
++    pDestRect,
++    hDestWindowOverride,
++    pDirtyRegion,
++    dwFlags);
++
++    if (D3D9DeviceEx_PresentEx_Callback)
++        D3D9DeviceEx_PresentEx_Callback();
++
++	return result;
+   }
+ 
+ 
+diff --git a/src/d3d9/d3d9_interface.cpp b/src/d3d9/d3d9_interface.cpp
+index 690e16d1..c589a272 100644
+--- a/src/d3d9/d3d9_interface.cpp
++++ b/src/d3d9/d3d9_interface.cpp
+@@ -258,6 +258,9 @@ namespace dxvk {
+     return nullptr;
+   }
+ 
++  std::function<void(D3DPRESENT_PARAMETERS* pPresentationParameters)> D3D9InterfaceEx_CreateDevice_Pre_Callback;
++  std::function<void(IDirect3DDevice9* pDevice)> D3D9InterfaceEx_CreateDevice_Post_Callback;
++
+ 
+   HRESULT STDMETHODCALLTYPE D3D9InterfaceEx::CreateDevice(
+           UINT                   Adapter,
+@@ -266,7 +269,11 @@ namespace dxvk {
+           DWORD                  BehaviorFlags,
+           D3DPRESENT_PARAMETERS* pPresentationParameters,
+           IDirect3DDevice9**     ppReturnedDeviceInterface) {
+-    return this->CreateDeviceEx(
++
++    if (D3D9InterfaceEx_CreateDevice_Pre_Callback)
++        D3D9InterfaceEx_CreateDevice_Pre_Callback(pPresentationParameters);
++
++    auto result = this->CreateDeviceEx(
+       Adapter,
+       DeviceType,
+       hFocusWindow,
+@@ -274,6 +281,11 @@ namespace dxvk {
+       pPresentationParameters,
+       nullptr, // <-- pFullscreenDisplayMode
+       reinterpret_cast<IDirect3DDevice9Ex**>(ppReturnedDeviceInterface));
++
++    if (D3D9InterfaceEx_CreateDevice_Post_Callback)
++        D3D9InterfaceEx_CreateDevice_Post_Callback(*ppReturnedDeviceInterface);
++
++	return result;
+   }
+ 
+ 
+-- 
+2.39.2.windows.1
+

@@ -201,8 +201,9 @@ public:
 	bool m_ApplyPitchAndRollPortalRotationOffset = false; // If `true`, the camera pitch/roll follows the exit portal's orientation when portalling
 	float m_CameraUprightRecoverySpeed = 0.2f; // If the above is `true`, this controls how quickly the camera turns back upright after portalling
 
-	VR() {};
 	VR(Game *game);
+	void initDxvkCallbacks();
+	void init();
 	int SetActionManifest(const char *fileName);
 	void InstallApplicationManifest(const char *fileName);
 	void Update();

@@ -316,7 +316,6 @@
     <ClInclude Include="..\dxvk\src\d3d9\d3d9_util.h" />
     <ClInclude Include="..\dxvk\src\d3d9\d3d9_vertex_declaration.h" />
     <ClInclude Include="..\dxvk\src\d3d9\d3d9_volume.h" />
-    <ClInclude Include="..\dxvk\src\d3d9\d3d9_vr.h" />
     <ClInclude Include="..\dxvk\src\d3d9\d3d9_window.h" />
     <ClInclude Include="..\dxvk\src\d3d9\shaders\d3d9_convert_common.h" />
     <ClInclude Include="..\dxvk\src\dxbc\dxbc_analysis.h" />
@@ -475,6 +474,7 @@
     <ClInclude Include="..\dxvk\src\wsi\wsi_platform.h" />
     <ClInclude Include="..\dxvk\src\wsi\wsi_window.h" />
     <ClInclude Include="..\dxvk\tests\test_utils.h" />
+    <ClInclude Include="d3d9_vr.h" />
     <ClInclude Include="game.h" />
     <ClInclude Include="hooks.h" />
     <ClInclude Include="offsets.h" />
@@ -531,7 +531,6 @@
     <ClCompile Include="..\dxvk\src\d3d9\d3d9_util.cpp" />
     <ClCompile Include="..\dxvk\src\d3d9\d3d9_vertex_declaration.cpp" />
     <ClCompile Include="..\dxvk\src\d3d9\d3d9_volume.cpp" />
-    <ClCompile Include="..\dxvk\src\d3d9\d3d9_vr.cpp" />
     <ClCompile Include="..\dxvk\src\d3d9\d3d9_window.cpp" />
     <ClCompile Include="..\dxvk\src\dxbc\dxbc_analysis.cpp" />
     <ClCompile Include="..\dxvk\src\dxbc\dxbc_chunk_isgn.cpp" />
@@ -637,6 +636,7 @@
     <ClCompile Include="..\dxvk\src\wsi\win32\wsi_monitor_win32.cpp" />
     <ClCompile Include="..\dxvk\src\wsi\win32\wsi_window_win32.cpp" />
     <ClCompile Include="..\dxvk\src\wsi\wsi_edid.cpp" />
+    <ClCompile Include="d3d9_vr.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="game.cpp" />
     <ClCompile Include="hooks.cpp" />

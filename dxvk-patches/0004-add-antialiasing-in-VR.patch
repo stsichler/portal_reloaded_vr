@@ -1,15 +1,14 @@
-From 76a64006b4350f8665af528a2e24c4cffe836f89 Mon Sep 17 00:00:00 2001
+From 8d33febec366d0702b4923d91c587a4cd8297892 Mon Sep 17 00:00:00 2001
 From: Holger Frydrych <holger@frydrych.org>
 Date: Sun, 17 Sep 2023 09:34:30 +0200
 Subject: [PATCH 4/5] add antialiasing in VR
 
 ---
- src/d3d9/d3d9_common_texture.cpp |  5 +-
- src/d3d9/d3d9_common_texture.h   | 14 +++++-
- src/d3d9/d3d9_device.cpp         | 79 +++++++++++++++++++++++++++++++-
- src/d3d9/d3d9_device.h           |  2 +
- src/d3d9/d3d9_vr.cpp             |  2 +-
- 5 files changed, 96 insertions(+), 6 deletions(-)
+ src/d3d9/d3d9_common_texture.cpp |  5 +--
+ src/d3d9/d3d9_common_texture.h   | 14 ++++++--
+ src/d3d9/d3d9_device.cpp         | 60 ++++++++++++++++++++++++++++----
+ src/d3d9/d3d9_device.h           |  2 ++
+ 4 files changed, 71 insertions(+), 10 deletions(-)
 
 diff --git a/src/d3d9/d3d9_common_texture.cpp b/src/d3d9/d3d9_common_texture.cpp
 index 6aed7038..0657810e 100644
@@ -82,75 +81,77 @@ index 37b5bc3a..dc4ece5a 100644
      D3D9SubresourceBitset         m_locked = { };
  
 diff --git a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
-index e2579017..6980d687 100644
+index aad67482..1199c040 100644
 --- a/src/d3d9/d3d9_device.cpp
 +++ b/src/d3d9/d3d9_device.cpp
-@@ -36,6 +36,26 @@
- #pragma fenv_access (on)
- #endif
+@@ -550,7 +550,8 @@ namespace dxvk {
+     m_implicitSwapchain->GetGammaRamp(pRamp);
+   }
  
-+namespace
-+{
-+	D3DMULTISAMPLE_TYPE MapToMultisampleType(int numSamples)
-+	{
-+		switch (numSamples)
-+		{
-+		case 16:
-+            return D3DMULTISAMPLE_16_SAMPLES;
-+		case 8:
-+            return D3DMULTISAMPLE_8_SAMPLES;
-+		case 4:
-+            return D3DMULTISAMPLE_4_SAMPLES;
-+		case 2:
-+            return D3DMULTISAMPLE_2_SAMPLES;
-+		default:
-+            return D3DMULTISAMPLE_NONE;
-+		}
-+	}
-+}
-+
- namespace dxvk {
+-  std::function<void(const Com<D3D9Texture2D>& texture)> D3D9DeviceEx_CreateTexture_Callback;
++  std::function<void(D3D9_COMMON_TEXTURE_DESC& desc)> D3D9DeviceEx_CreateTexture_Pre_Callback;
++  std::function<void(const Com<D3D9Texture2D>& texture)> D3D9DeviceEx_CreateTexture_Post_Callback;
  
-   D3D9DeviceEx::D3D9DeviceEx(
-@@ -592,6 +612,12 @@ namespace dxvk {
+   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::CreateTexture(
+           UINT                Width,
+@@ -587,6 +588,9 @@ namespace dxvk {
                              || (Usage & D3DUSAGE_DYNAMIC)
                              || IsVendorFormat(EnumerateFormat(Format));
  
-+	if (g_Game && g_Game->m_VR && (g_Game->m_VR->m_CreatingTextureID == VR::Texture_LeftEye || g_Game->m_VR->m_CreatingTextureID == VR::Texture_RightEye))
-+	{
-+        dxvk::Logger::info(str::format("Creating texture with MSAA ", g_Game->m_VR->m_AntiAliasing));
-+		desc.MultiSample = MapToMultisampleType(g_Game->m_VR->m_AntiAliasing);
-+	}
++    if (D3D9DeviceEx_CreateTexture_Pre_Callback)
++        D3D9DeviceEx_CreateTexture_Pre_Callback(desc);
 +
      if (FAILED(D3D9CommonTexture::NormalizeTextureProperties(this, &desc)))
        return D3DERR_INVALIDCALL;
  
-@@ -3753,6 +3779,11 @@ namespace dxvk {
-     hDestWindowOverride,
-     pDirtyRegion,
+@@ -609,8 +613,8 @@ namespace dxvk {
+       if (desc.Pool == D3DPOOL_DEFAULT)
+         m_losableResourceCounter++;
+ 
+-      if (D3D9DeviceEx_CreateTexture_Callback)
+-          D3D9DeviceEx_CreateTexture_Callback(texture);
++      if (D3D9DeviceEx_CreateTexture_Post_Callback)
++          D3D9DeviceEx_CreateTexture_Post_Callback(texture);
+ 
+       return D3D_OK;
+     }
+@@ -3693,7 +3697,7 @@ namespace dxvk {
+     return D3D_OK;
+   }
+ 
+-  std::function<void()> D3D9DeviceEx_PresentEx_Callback;
++  std::function<void(D3D9DeviceEx* pDevice)> D3D9DeviceEx_PresentEx_Callback;
+ 
+   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::PresentEx(
+     const RECT* pSourceRect,
+@@ -3710,7 +3714,7 @@ namespace dxvk {
      dwFlags);
-+
-+    if (g_Game && g_Game->m_VR && g_Game->m_VR->m_CreatedVRTextures) {
-+      ResolveImage(GetCommonTexture(g_Game->m_VR->m_D9LeftEyeSurface));
-+      ResolveImage(GetCommonTexture(g_Game->m_VR->m_D9RightEyeSurface));
-+    }
- 	  
- 	g_D3DVR9->WaitDeviceIdle();
-     
-@@ -3899,6 +3930,12 @@ namespace dxvk {
+ 
+     if (D3D9DeviceEx_PresentEx_Callback)
+-        D3D9DeviceEx_PresentEx_Callback();
++        D3D9DeviceEx_PresentEx_Callback(this);
+ 
+ 	return result;
+   }
+@@ -3817,6 +3821,7 @@ namespace dxvk {
+     }
+   }
+ 
++  std::function<void(D3D9_COMMON_TEXTURE_DESC& desc)> D3D9DeviceEx_CreateDepthStencilSurfaceEx_Pre_Callback;
+ 
+   HRESULT STDMETHODCALLTYPE D3D9DeviceEx::CreateDepthStencilSurfaceEx(
+           UINT                Width,
+@@ -3850,6 +3855,9 @@ namespace dxvk {
      // Docs don't say anything, so just assume it's lockable.
      desc.IsLockable         = TRUE;
  
-+	if (g_Game && g_Game->m_VR && (g_Game->m_VR->m_CreatingTextureID == VR::Texture_LeftEye || g_Game->m_VR->m_CreatingTextureID == VR::Texture_RightEye))
-+	{
-+        dxvk::Logger::info(str::format("Creating depth/stencil surface with MSAA ", g_Game->m_VR->m_AntiAliasing));
-+		desc.MultiSample = MapToMultisampleType(g_Game->m_VR->m_AntiAliasing);
-+	}
++    if (D3D9DeviceEx_CreateDepthStencilSurfaceEx_Pre_Callback)
++      D3D9DeviceEx_CreateDepthStencilSurfaceEx_Pre_Callback(desc);
 +
      if (FAILED(D3D9CommonTexture::NormalizeTextureProperties(this, &desc)))
        return D3DERR_INVALIDCALL;
  
-@@ -6443,9 +6480,22 @@ namespace dxvk {
+@@ -6394,9 +6402,22 @@ namespace dxvk {
      D3D9CommonTexture* commonTex =
        GetCommonTexture(m_state.textures[StateSampler]);
  
@@ -174,7 +175,7 @@ index e2579017..6980d687 100644
      ](DxvkContext* ctx) mutable {
        VkShaderStageFlags stage = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
        ctx->bindResourceImageView(stage, cSlot, std::move(cImageView));
-@@ -7930,4 +7980,31 @@ namespace dxvk {
+@@ -7881,4 +7902,31 @@ namespace dxvk {
      m_flags.clr(D3D9DeviceFlag::DirtySpecializationEntries);
    }
  
@@ -207,31 +208,18 @@ index e2579017..6980d687 100644
 +  }
  }
 diff --git a/src/d3d9/d3d9_device.h b/src/d3d9/d3d9_device.h
-index 8b979106..05252b96 100644
+index 8b979106..34523f54 100644
 --- a/src/d3d9/d3d9_device.h
 +++ b/src/d3d9/d3d9_device.h
-@@ -1204,6 +1204,8 @@ namespace dxvk {
- 
-     uint64_t GetCurrentSequenceNumber();
+@@ -990,6 +990,8 @@ namespace dxvk {
+       return m_behaviorFlags & D3DCREATE_SOFTWARE_VERTEXPROCESSING;
+     }
  
 +    void ResolveImage(D3D9CommonTexture* commonTex);
 +
-     Com<D3D9InterfaceEx>            m_parent;
-     D3DDEVTYPE                      m_deviceType;
-     HWND                            m_window;
-diff --git a/src/d3d9/d3d9_vr.cpp b/src/d3d9/d3d9_vr.cpp
-index cfcf5b38..8ed15b0c 100644
---- a/src/d3d9/d3d9_vr.cpp
-+++ b/src/d3d9/d3d9_vr.cpp
-@@ -52,7 +52,7 @@ namespace dxvk {
-             const auto *tex = surface->GetCommonTexture();
+   private:
  
-             const auto &desc = tex->Desc();
--            const auto &image = tex->GetImage();
-+            const auto &image = desc->MultiSample != D3DMULTISAMPLE_NONE ? const_cast<D3D9CommonTexture*>(tex)->GetResolveImage() : tex->GetImage();
-             const auto &device = tex->Device()->GetDXVKDevice();
- 
-             // I don't know why the image randomly is a uint64_t in OpenVR.
+     DxvkCsChunkRef AllocCsChunk() {
 -- 
-2.39.0.windows.2
+2.39.2.windows.1
 
