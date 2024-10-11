@@ -179,6 +179,9 @@
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)dxvk\src\dxgi\dxgi.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "C:\Program Files (x86)\Steam\steamapps\common\Portal Revolution\bin\win64\$(TargetName)$(TargetExt)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -207,6 +210,9 @@
       <AdditionalDependencies>openvr_api.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>$(SolutionDir)dxvk\src\dxgi\dxgi.def</ModuleDefinitionFile>
     </Link>
+    <PostBuildEvent>
+      <Command>copy /Y "$(OutDir)$(TargetName)$(TargetExt)" "C:\Program Files (x86)\Steam\steamapps\common\Portal Revolution\bin\win64\$(TargetName)$(TargetExt)"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\dxvk\include\openvr\openvr.hpp" />

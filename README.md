@@ -29,7 +29,7 @@ This Repo is intended as a **starting point** for implementation of a VR Mod for
 5. Set to x64 Debug or Release
 6. Build -> Build Solution
 
-Note: After building, it will attempt to copy the new d3d11.dll to your Portal Revolution/bin/win64 directory.
+Note: After building, it will attempt to copy the new d3d11.dll and dxgi.dll to your Portal Revolution/bin/win64 directory.
 
 ## Based on
 * Brilliant Portal 2 VR mod from [Gistix](https://github.com/Gistix/portal2vr)
