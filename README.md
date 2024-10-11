@@ -5,9 +5,12 @@
   </p>
 </div>
 
-# ![Portal 2 icon](imgs/icon.jpg "Portal 2 icon") Portal Revolution VR Mod
+# ![Portal 2 icon](imgs/icon.jpg "Portal 2 icon") Portal Revolution VR Mod - **CURRENTLY NOT WORKING!**
 
-# HELP NEEDED!
+# HELP NEEDED! HELP NEEDED!
+
+This Repo is intended as a **starting point** for implementation of a VR Mod for Portal Revolution. Feel free to contribute!
+
 
 ## Things that work
 * Injection of [DXVK](https://github.com/doitsujin/dxvk)-based D3D11 DLL -> game now runs on Vulkan (on Flatscreen, **NO VR!**)
