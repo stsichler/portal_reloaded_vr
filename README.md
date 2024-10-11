@@ -7,14 +7,14 @@
 
 # ![Portal 2 icon](imgs/icon.jpg "Portal 2 icon") Portal Revolution VR Mod - **CURRENTLY NOT WORKING!**
 
-# HELP NEEDED! HELP NEEDED!
+# *** HELP NEEDED! ***
 
 This Repo is intended as a **starting point** for implementation of a VR Mod for Portal Revolution. Feel free to contribute!
 
 
 ## Things that work
-* Injection of [DXVK](https://github.com/doitsujin/dxvk)-based D3D11 DLL -> game now runs on Vulkan (on Flatscreen, **NO VR!**)
-* Ready to re-insert necessary hooks into game engine and graphics
+* Injection of [dxvk](https://github.com/doitsujin/dxvk)-based D3D11 DLL -> game now runs on Vulkan (on Flatscreen, **NO VR!**)
+* OpenVR framework is initialized -> Mod is prepared to re-insert all necessary hooks into game engine and graphics
 
 ## Things that need fixing
 * Update Source-SDK related files
@@ -29,7 +29,12 @@ This Repo is intended as a **starting point** for implementation of a VR Mod for
 5. Set to x64 Debug or Release
 6. Build -> Build Solution
 
-Note: After building, it will attempt to copy the new d3d11.dll and dxgi.dll to your Portal Revolution/bin/win64 directory.
+Note: After building, it will attempt to copy the new ```d3d11.dll``` and ```dxgi.dll``` to your ```Portal Revolution/bin/win64``` directory.
+
+## How to use
+* Set these launch options for Portal Revolution:
+  
+  ```-insecure -window -novid +mat_motion_blur_percent_of_screen_max 0 +mat_queue_mode 0 +mat_vsync 0 +mat_antialias 0 +mat_grain_scale_override 0 -width 1280 -height 720```
 
 ## Based on
 * Brilliant Portal 2 VR mod from [Gistix](https://github.com/Gistix/portal2vr)
