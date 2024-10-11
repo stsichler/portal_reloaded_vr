@@ -1,67 +1,36 @@
 <div align="center">
   <p>
-    <a align="center" href="https://ultralytics.com/yolov5" target="_blank">
-      <img width="auto" src="https://raw.githubusercontent.com/Gistix/portal2vr/main/imgs/logo.png"></a>
+    <a align="center">
+      <img width="auto" src="https://raw.githubusercontent.com/stsichler/portal_reloaded_vr/revolution/imgs/logo.png"></a>
   </p>
 </div>
 
-# ![Portal 2 icon](imgs/icon.jpg "Portal 2 icon") Portal 2 VR
-### ~~Use this mod at your own risk of getting VAC banned. Use the -insecure launch option to help protect yourself.~~
-### Apparently Portal 2 doesn't have VAC, but just to be safe you should still run the game with the `insecure` flag.
-This game contains flashing lights and fast motion sequences.
+# ![Portal 2 icon](imgs/icon.jpg "Portal 2 icon") Portal Revolution VR Mod
 
-## Portal 2 VR Mod First 20 Minutes (Youtube Video)
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/nQZ601kEDFI/0.jpg)](https://www.youtube.com/watch?v=nQZ601kEDFI)
+# HELP NEEDED!
 
 ## Things that work
-* Singleplayer
-* 6DoF VR view
-* Motion controls for portal gun and grabbable objects
-* Workshop content
+* Injection of [DXVK](https://github.com/doitsujin/dxvk)-based D3D11 DLL -> game now runs on Vulkan (on Flatscreen, **NO VR!**)
+* Ready to re-insert necessary hooks into game engine and graphics
 
 ## Things that need fixing
-* Use the game's own haptic feedback
-* In-game UI and pause menu are broken
-* 6DoF and Roomscale needs to be reimplemented
-* CPU is underutilized
-
-## How to use
-1. Download [Portal2VR.zip](https://github.com/Gistix/portal2vr/releases) and extract the files to your Portal 2 directory (steamapps\common\Portal 2)
-2. Connect your headset, then launch Portal 2 with these launch options:
-   
-   ``` -insecure -window -novid +mat_motion_blur_percent_of_screen_max 0 +mat_queue_mode 0 +mat_vsync 0 +mat_antialias 0 +mat_grain_scale_override 0 -width 1280 -height 720 ```
-
-3. At the menu, feel free to change [these video settings](https://i.imgur.com/yYQMXs6.jpg).
-4. Load into a chapter. 
-5. To recenter the camera height, press down on the left stick. To see the HUD, aim the controller up or down.
-
-## Troubleshooting
-If you have no audio:
-* Go to ```steamapps\common\Portal 2\portal2_dlc3``` and execute ```UpdateSoundCache.cmd```
-  
-If the game isn't loading in VR:
-* Try opening SteamVR before the game
-* Disable SteamVR theater in [Steam settings](https://external-preview.redd.it/1WdLExouo_YKhTGT6C5GGrOjeWO7qNdIdDRvIRBhw-0.png?auto=webp&s=0d4447a9d954e1ec15b2c010cf50eeabd51f4197)
-
-If the game is stuttering, try: 
-* Steam Settings -> Shader Pre-Caching -> Allow background processing of Vulkan shaders
-
-If the game is crashing, try:
-* Lowering video settings
-* Disabling all add-ons then verifying integrity of game files
-* Re-installing the game
+* Update Source-SDK related files
+* Re-establish hooks into game engine
+* Port D3D-related code from D3D9 to D3D11
 
 ## Build instructions
 1. Clone Repository
 2. Run ```git submodule update --init --recursive```
 3. Run ```dxvk-apply-patches.bat```
 4. Open l4d2vr.sln
-5. Set to x86 Debug or Release
+5. Set to x64 Debug or Release
 6. Build -> Build Solution
 
-Note: After building, it will attempt to copy the new d3d9.dll to your Portal 2/bin directory.
+Note: After building, it will attempt to copy the new d3d11.dll to your Portal Revolution/bin/win64 directory.
 
 ## Based on
+* Brilliant Portal 2 VR mod from [Gistix](https://github.com/Gistix/portal2vr)
+* Portal Reloaded adaptions from [Scriptor25](https://github.com/Scriptor25)
 * [l4d2vr](https://github.com/sd805/l4d2vr)
   
 ## Utilizes code from
@@ -69,7 +38,3 @@ Note: After building, it will attempt to copy the new d3d9.dll to your Portal 2/
 * [gmcl_openvr](https://github.com/Planimeter/gmcl_openvr/)
 * [dxvk](https://github.com/TheIronWolfModding/dxvk/tree/vr-dx9-rel)
 * [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013/)
-
-## Support me
-<a href="https://www.paypal.com/donate/?business=YL7TGWKPCC9H8&no_recurring=0&currency_code=USD"><img src="https://pics.paypal.com/00/s/MDAwNDljNmUtZWZiZS00ZTI1LWFiMTMtZTdhZmQ5NmU5ZDUx/file.PNG" alt="Donate Button" style="width:auto;height:100px;"></a>
-
