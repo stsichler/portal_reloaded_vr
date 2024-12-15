@@ -1436,9 +1436,9 @@ void VR::ParseConfigFile()
     parseOrDefault("LeftHanded", m_LeftHanded, false);
     parseOrDefault("VRScale", m_VRScale, 43.2f);
     parseOrDefault("IPDScale", m_IpdScale, 1.0f);
+    parseOrDefault("6DOF", m_6DOF, true);
     parseOrDefault("SeatedMode", m_SeatedMode, false);
-    /*parseOrDefault("6DOF", m_6DOF, true);
-    parseOrDefault("HudDistance", m_HudDistance, 1.3f);
+    /*parseOrDefault("HudDistance", m_HudDistance, 1.3f);
     parseOrDefault("HudSize", m_HudSize, 4.0f);
     parseOrDefault("HudAlwaysVisible", m_HudAlwaysVisible, false);*/
     parseOrDefault("AimMode", m_AimMode, 2);
