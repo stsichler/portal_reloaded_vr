@@ -1,0 +1,42 @@
+{
+	// Builds l4d2vr.sln (x86) with the MSBuild of Visual Studio 2022. The post-build event
+	// copies d3d9.dll into the Portal Reloaded game directory, so the game must not be running.
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Debug (x86)",
+			"type": "process",
+			"command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+			"args": [
+				"l4d2vr.sln",
+				"/m",
+				"/nologo",
+				"/p:Configuration=Debug",
+				"/p:Platform=x86",
+				"/p:GenerateFullPaths=true",
+				"/clp:NoSummary"
+			],
+			"problemMatcher": "$msCompile",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"label": "Build Release (x86)",
+			"type": "process",
+			"command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+			"args": [
+				"l4d2vr.sln",
+				"/m",
+				"/nologo",
+				"/p:Configuration=Release",
+				"/p:Platform=x86",
+				"/p:GenerateFullPaths=true",
+				"/clp:NoSummary"
+			],
+			"problemMatcher": "$msCompile",
+			"group": "build"
+		}
+	]
+}
