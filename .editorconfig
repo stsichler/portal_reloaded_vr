@@ -1,0 +1,8 @@
+# Line endings must match .gitattributes.
+root = true
+
+[*]
+end_of_line = lf
+
+[*.{sln,vcxproj,vcxproj.filters,bat,cmd}]
+end_of_line = crlf

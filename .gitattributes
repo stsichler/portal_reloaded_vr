@@ -1,0 +1,10 @@
+# The working tree is shared between Linux and Windows, so line endings are fixed here
+# instead of relying on each platform's core.autocrlf: LF everywhere, CRLF only where
+# Windows tools need it.
+* text=auto eol=lf
+
+*.sln              text eol=crlf
+*.vcxproj          text eol=crlf
+*.vcxproj.filters  text eol=crlf
+*.bat              text eol=crlf
+*.cmd              text eol=crlf
