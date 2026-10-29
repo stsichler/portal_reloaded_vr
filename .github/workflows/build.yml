@@ -1,0 +1,59 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    # windows-2022 ships VS 2022 with the v143 toolset the project uses
+    # (windows-latest has moved on to VS 2026).
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Release, Debug]
+
+    steps:
+      # Keep line endings byte-exact so the dxvk patches apply cleanly.
+      - name: Disable autocrlf
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Apply dxvk patches
+        shell: pwsh
+        run: |
+          $patches = Get-ChildItem dxvk-patches -Filter *.patch | Sort-Object Name | ForEach-Object FullName
+          git -C dxvk -c user.name=ci -c user.email=ci@localhost am $patches
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: microsoft/setup-msbuild@v3
+
+      # The post-build event copies d3d9.dll into the local Steam game directory,
+      # which does not exist on the runner.
+      - name: Build
+        run: msbuild l4d2vr.sln /m /p:Configuration=${{ matrix.configuration }} /p:Platform=x86 /p:PostBuildEventUseInBuild=false
+
+      # Same layout as the release zip, minus the game content (portal2_dlc3),
+      # which is not part of this repository and must not be redistributed here.
+      - name: Package
+        shell: pwsh
+        run: |
+          $out = "package"
+          New-Item -ItemType Directory -Force "$out/bin", "$out/VR" | Out-Null
+          Copy-Item "${{ matrix.configuration }}/d3d9.dll", "${{ matrix.configuration }}/d3d9.pdb" "$out/bin/"
+          Copy-Item thirdparty/openvr/bin/win32/openvr_api.dll "$out/bin/"
+          Copy-Item L4D2VR/config.txt, L4D2VR/manifest.vrmanifest, L4D2VR/portal_reloaded_vr_capsule_main.png "$out/VR/"
+          Copy-Item -Recurse L4D2VR/SteamVRActionManifest "$out/VR/"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: PortalReloadedVR-${{ matrix.configuration }}
+          path: package/
