@@ -995,32 +995,6 @@ void VR::UpdateTracking()
     if ((cameraFollowing < 0 && cameraDistance > 1) || (m_PushingThumbstick))
         m_RoomscaleActive = false;*/
 
-    m_AimPos = Trace((uint32_t*)localPlayer);
-
-    if (m_AimMode == 2) {
-        C_Portal_Player* portalPlayer = (C_Portal_Player*)localPlayer;
-
-        auto activeWeaponAddr = (*(int(__thiscall**)(void*))(*(uintptr_t*)portalPlayer + 968))(portalPlayer);
-        //auto activeWeaponAddr = (*(int(__thiscall**)(void*))(*(uintptr_t*)m_Game->m_Offsets->GetActivePortalWeapon.address))(portalPlayer);
-
-        if (activeWeaponAddr && m_DrawCrosshair) {
-            CWeaponPortalBase* activeWeapon = (CWeaponPortalBase*)activeWeaponAddr;
-
-            if (portalPlayer->m_PointLaser) {
-                portalPlayer->m_PointLaser->SetControlPoint(1, m_AimPos);
-                portalPlayer->m_PointLaser->SetControlPoint(2, m_Game->m_singlePlayerPortalColors[activeWeapon->m_iLastFiredPortal] * 0.5f);
-            }
-            else {
-                std::cout << "Creating Point Laser Beam Sight Thingy" << "\n";
-                m_Game->m_Hooks->CreatePingPointer(localPlayer, m_AimPos);
-            }
-        }
-        else if (portalPlayer->m_PointLaser){
-            portalPlayer->m_PointLaser->StopEmission(false, true, false);
-            portalPlayer->m_PointLaser = NULL;
-        }
-    }
-
     // Check if camera is clipping inside wall
     /*CGameTrace trace;
     Ray_t ray;
@@ -1114,6 +1088,35 @@ void VR::UpdateTracking()
     // Viewmodel roll offset
     m_ViewmodelRight = VectorRotate(m_ViewmodelRight, m_ViewmodelForward, m_ViewmodelAngOffset.z);
     m_ViewmodelUp = VectorRotate(m_ViewmodelUp, m_ViewmodelForward, m_ViewmodelAngOffset.z);
+
+    // The aim trace needs the controller pose of this frame (position relative to the HMD and
+    // direction, both rotated by m_RotationOffset). Done before they were updated, the laser was
+    // one frame behind, which showed after a snap turn.
+    m_AimPos = Trace((uint32_t*)localPlayer);
+
+    if (m_AimMode == 2) {
+        C_Portal_Player* portalPlayer = (C_Portal_Player*)localPlayer;
+
+        auto activeWeaponAddr = (*(int(__thiscall**)(void*))(*(uintptr_t*)portalPlayer + 968))(portalPlayer);
+        //auto activeWeaponAddr = (*(int(__thiscall**)(void*))(*(uintptr_t*)m_Game->m_Offsets->GetActivePortalWeapon.address))(portalPlayer);
+
+        if (activeWeaponAddr && m_DrawCrosshair) {
+            CWeaponPortalBase* activeWeapon = (CWeaponPortalBase*)activeWeaponAddr;
+
+            if (portalPlayer->m_PointLaser) {
+                portalPlayer->m_PointLaser->SetControlPoint(1, m_AimPos);
+                portalPlayer->m_PointLaser->SetControlPoint(2, m_Game->m_singlePlayerPortalColors[activeWeapon->m_iLastFiredPortal] * 0.5f);
+            }
+            else {
+                std::cout << "Creating Point Laser Beam Sight Thingy" << "\n";
+                m_Game->m_Hooks->CreatePingPointer(localPlayer, m_AimPos);
+            }
+        }
+        else if (portalPlayer->m_PointLaser){
+            portalPlayer->m_PointLaser->StopEmission(false, true, false);
+            portalPlayer->m_PointLaser = NULL;
+        }
+    }
 }
 
 Vector VR::GetViewAngle()
