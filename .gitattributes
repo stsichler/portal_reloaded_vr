@@ -1,10 +1,34 @@
-# The working tree is shared between Linux and Windows, so line endings are fixed here
-# instead of relying on each platform's core.autocrlf: LF everywhere, CRLF only where
-# Windows tools need it.
+# Line endings and binary files are fixed here instead of depending on each machine's
+# core.autocrlf. The working tree is shared between Windows (built with Visual Studio) and Linux;
+# with these attributes both Git versions write byte-identical files, whoever checks out.
+#
+#   repository: always LF
+#   working tree: LF, except for the files below that Windows tools or players need as CRLF
+#   binary files: never touched
+#
+# After changing this file: git add --renormalize . && git status
 * text=auto eol=lf
 
+# CRLF: Visual Studio; cmd.exe (labels and goto break in LF files); config.txt is edited by
+# players with Windows Notepad.
 *.sln              text eol=crlf
 *.vcxproj          text eol=crlf
 *.vcxproj.filters  text eol=crlf
 *.bat              text eol=crlf
 *.cmd              text eol=crlf
+L4D2VR/config.txt  text eol=crlf
+
+# Binary
+*.png   binary
+*.jpg   binary
+*.dll   binary
+*.lib   binary
+*.pdb   binary
+*.zip   binary
+*.vpk   binary
+*.cache binary
+*.mdl   binary
+*.vvd   binary
+*.vtx   binary
+*.phy   binary
+*.ani   binary
