@@ -402,3 +402,6 @@ FodyWeavers.xsd
 /L4D2VR/Release
 /RelWithDebInfo
 /L4D2VR/RelWithDebInfo
+
+# Output of tools/package-release.ps1
+/dist/
