@@ -56,7 +56,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/main/in/Flashlight"
+                     "output" : "/actions/main/in/RemoteView"
                   },
                   "position" : {
                      "output" : "/actions/main/in/Turn"
@@ -203,6 +203,15 @@
 			{
                "inputs" : {
                   "click" : {
+                     "output" : "/actions/main/in/QuickPing"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/a"
+            },
+			{
+               "inputs" : {
+                  "click" : {
                      "output" : "/actions/main/in/Pause"
                   }
                },
@@ -243,7 +252,7 @@
    "category" : "steamvr_input",
    "controller_type" : "knuckles",
    "description" : "",
-   "name" : "Default Portal 2 VR bindings for Index Controllers",
+   "name" : "Portal Reloaded VR bindings for Index Controllers",
    "options" : {},
    "simulated_actions" : []
 }

@@ -74,6 +74,14 @@
 			"type": "boolean"
 		},
 		{
+			"name": "/actions/main/in/QuickPing",
+			"type": "boolean"
+		},
+		{
+			"name": "/actions/main/in/RemoteView",
+			"type": "boolean"
+		},
+		{
 			"name": "/actions/main/in/NextItem",
 			"type": "boolean"
 		},
@@ -164,6 +172,8 @@
 			"/actions/main/in/Turn" : "Turn",
 			"/actions/main/in/Reload" : "Reload",
 			"/actions/main/in/Use" : "Use",
+			"/actions/main/in/QuickPing" : "Quick Ping",
+			"/actions/main/in/RemoteView" : "Remote View",
 			"/actions/main/in/NextItem" : "Next Item",
 			"/actions/main/in/PrevItem" : "Previous Item",
 			"/actions/main/in/ResetPosition" : "Reset Position",

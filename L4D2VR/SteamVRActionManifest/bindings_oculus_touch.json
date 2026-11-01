@@ -56,7 +56,7 @@
             {
                "inputs" : {
                   "click" : {
-                     "output" : "/actions/main/in/Flashlight"
+                     "output" : "/actions/main/in/RemoteView"
                   },
                   "position" : {
                      "output" : "/actions/main/in/Turn"
@@ -198,6 +198,15 @@
 			{
                "inputs" : {
                   "click" : {
+                     "output" : "/actions/main/in/QuickPing"
+                  }
+               },
+               "mode" : "button",
+               "path" : "/user/hand/left/input/x"
+            },
+			{
+               "inputs" : {
+                  "click" : {
                      "output" : "/actions/main/in/Pause"
                   }
                },
@@ -228,7 +237,7 @@
    "category" : "steamvr_input",
    "controller_type" : "oculus_touch",
    "description" : "",
-   "name" : "Portal 2 VR bindings for Oculus Touch",
+   "name" : "Portal Reloaded VR bindings for Oculus Touch",
    "options" : {},
    "simulated_actions" : []
 }

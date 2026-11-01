@@ -162,6 +162,8 @@ public:
 	vr::VRActionHandle_t m_ActionCrouch;
 	vr::VRActionHandle_t m_ActionFlashlight;
 	vr::VRActionHandle_t m_ActionActivateVR;
+	vr::VRActionHandle_t m_ActionQuickPing;
+	vr::VRActionHandle_t m_ActionRemoteView;
 	vr::VRActionHandle_t m_MenuSelect;
 	vr::VRActionHandle_t m_MenuBack;
 	vr::VRActionHandle_t m_MenuUp;
