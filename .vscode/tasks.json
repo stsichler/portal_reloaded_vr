@@ -4,6 +4,26 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			// Optimized with Release CRT, but with full PDB and the diagnostics (log file, crash log)
+			"label": "Build RelWithDebInfo (x86)",
+			"type": "process",
+			"command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
+			"args": [
+				"l4d2vr.sln",
+				"/m",
+				"/nologo",
+				"/p:Configuration=RelWithDebInfo",
+				"/p:Platform=x86",
+				"/p:GenerateFullPaths=true",
+				"/clp:NoSummary"
+			],
+			"problemMatcher": "$msCompile",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
 			"label": "Build Debug (x86)",
 			"type": "process",
 			"command": "C:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\MSBuild\\Current\\Bin\\MSBuild.exe",
@@ -17,10 +37,7 @@
 				"/clp:NoSummary"
 			],
 			"problemMatcher": "$msCompile",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			}
+			"group": "build"
 		},
 		{
 			"label": "Build Release (x86)",

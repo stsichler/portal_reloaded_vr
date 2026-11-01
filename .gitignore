@@ -397,3 +397,5 @@ FodyWeavers.xsd
 /Debug
 /L4D2VR/Debug
 /L4D2VR/Release
+/RelWithDebInfo
+/L4D2VR/RelWithDebInfo
