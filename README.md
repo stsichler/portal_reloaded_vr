@@ -26,10 +26,7 @@ This game contains flashing lights and fast motion sequences.
 
 ## How to use
 1. Download [PortalReloadedVR.zip](https://github.com/stsichler/portal_reloaded_vr/releases) and extract the files to your Portal Reloaded directory (steamapps\common\Portal Reloaded)
-2. Connect your headset, then launch Portal Reloaded with these launch options:
-   
-   ``` -insecure -window -novid +mat_motion_blur_percent_of_screen_max 0 +mat_queue_mode 0 +mat_vsync 0 +mat_antialias 0 +mat_grain_scale_override 0 -width 1280 -height 720 ```
-
+2. Connect your headset, then launch Portal Reloaded.
 3. To recenter the camera height, press down on the left stick. To see the HUD, aim the controller up or down.
 
 ## Troubleshooting
