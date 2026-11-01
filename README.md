@@ -11,18 +11,18 @@
 This game contains flashing lights and fast motion sequences.
 
 ## Things that work
-* Singleplayer
-* 6DoF VR view
+* Singleplayer, Multiplayer
+* 6DoF VR view, Seated Mode, Room-Scale Mode
 * Motion controls for portal gun and grabbable objects
 * 3rd portal (use left trigger)
 
 ## Things that need fixing
 * ~~Initial player height is wrong and must be manually adapted~~
-* Lighting effects of portal gun are misplaced
-* Time portals can be placed when it should not be possible at all
+* ~~Lighting effects of portal gun are misplaced~~
+* ~~Time portals can be placed when it should not be possible at all~~
 * Use the game's own haptic feedback
-* In-game UI and pause menu are broken
-* 6DoF and Roomscale needs to be reimplemented
+* ~~In-game UI and pause menu are broken~~
+* ~~6DoF and Roomscale needs to be reimplemented~~
 
 ## How to use
 1. Download [PortalReloadedVR.zip](https://github.com/stsichler/portal_reloaded_vr/releases) and extract the files to your Portal Reloaded directory (steamapps\common\Portal Reloaded)
@@ -54,7 +54,7 @@ If the game is crashing, try:
 2. Run ```git submodule update --init --recursive```
 3. Run ```dxvk-apply-patches.bat```
 4. Open l4d2vr.sln
-5. Set to x86 Debug or Release
+5. Set to x86 Debug, RelWithDebInfo or Release
 6. Build -> Build Solution
 
 Note: After building, it will attempt to copy the new d3d9.dll to your Portal Reloaded/bin directory.
