@@ -14,9 +14,10 @@ the Portal Reloaded game folder, so players extract it there:
 Everything except portal2_dlc3\ is taken from the repository; the DLL must be built first
 (RelWithDebInfo and Debug builds open a console and write l4d2vr_debug.log, so players get
 Release). portal2_dlc3\ holds models derived from Valve's assets and is deliberately not in the
-public repository: it comes from a private folder whose content is copied into the ZIP root
-(portal2_dlc3\pak01_dir.vpk, UpdateSoundCache.cmd, maps\soundcache\_master.cache). Without it the
-portal gun is shown at the original model's position.
+public repository: it comes from a private folder (a checkout of the private repository) whose
+portal2_dlc3\ is copied into the ZIP root (pak01_dir.vpk, UpdateSoundCache.cmd,
+maps\soundcache\_master.cache); nothing else of that folder (.git, README) goes into the ZIP.
+Without it the portal gun is shown at the original model's position.
 *.cmd files and config.txt are converted to CRLF, whatever the checkout looks like.
 
 .PARAMETER Configuration
@@ -29,9 +30,9 @@ Used in the ZIP name (default: git describe).
 Also put bin\d3d9.pdb into the ZIP.
 
 .PARAMETER PrivateFiles
-Folder with the files that must not be in the public repository; its content is copied into the ZIP
-root. Default: a folder portal_reloaded_vr_private next to the repository, if it exists.
-In GitHub CI this can be a checkout of a private repository.
+Folder with the files that must not be in the public repository; its portal2_dlc3\ is copied into
+the ZIP root. Default: a folder portal_reloaded_vr_private next to the repository, if it exists.
+In GitHub CI this is a checkout of the private repository.
 
 .EXAMPLE
 tools\package-release.ps1 -Configuration Release -Version 0.2.0p1-reloaded.4
@@ -82,8 +83,9 @@ if (-not $PrivateFiles) {
     if (Test-Path $default) { $PrivateFiles = $default }
 }
 if ($PrivateFiles) {
-    if (-not (Test-Path $PrivateFiles)) { throw "-PrivateFiles folder $PrivateFiles not found." }
-    Copy-Item -Recurse -Force (Join-Path $PrivateFiles '*') $stage
+    $dlc = Join-Path $PrivateFiles 'portal2_dlc3'
+    if (-not (Test-Path $dlc)) { throw "$dlc not found." }
+    Copy-Item -Recurse $dlc $stage
 } else {
     Write-Warning 'No -PrivateFiles folder: the ZIP has no portal2_dlc3 (modded portal gun models).'
 }
