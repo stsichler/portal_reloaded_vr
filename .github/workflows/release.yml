@@ -1,0 +1,81 @@
+name: Release
+
+# Pushing a tag v* builds the Release configuration, packages PortalReloadedVR.zip (including
+# portal2_dlc3 from the private repository) and creates a draft GitHub release for the tag.
+# The release notes are the message of the annotated tag (--cleanup=verbatim, otherwise git drops
+# Markdown headings as comment lines):
+#   git tag -a v0.2.0p1-reloaded.4 --cleanup=verbatim -F release-notes.md
+#   git push origin v0.2.0p1-reloaded.4
+# Needs the secret PRIVATE_FILES_PAT: a fine-grained token with read access ("Contents: Read")
+# to stsichler/portal_reloaded_vr_private only.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-2022
+
+    steps:
+      # Keep line endings byte-exact so the dxvk patches apply cleanly.
+      - name: Disable autocrlf
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      # actions/checkout doesn't keep the annotated tag object, which holds the release notes.
+      - name: Fetch the tag
+        shell: pwsh
+        run: |
+          git fetch --force origin "refs/tags/${{ github.ref_name }}:refs/tags/${{ github.ref_name }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/checkout@v7
+        with:
+          repository: stsichler/portal_reloaded_vr_private
+          token: ${{ secrets.PRIVATE_FILES_PAT }}
+          path: private
+
+      - name: Apply dxvk patches
+        shell: pwsh
+        run: |
+          $patches = Get-ChildItem dxvk-patches -Filter *.patch | Sort-Object Name | ForEach-Object FullName
+          git -C dxvk -c user.name=ci -c user.email=ci@localhost am $patches
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: microsoft/setup-msbuild@v3
+
+      # The post-build event copies d3d9.dll into the local Steam game directory,
+      # which does not exist on the runner.
+      - name: Build
+        run: msbuild l4d2vr.sln /m /p:Configuration=Release /p:Platform=x86 /p:PostBuildEventUseInBuild=false
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}' -replace '^v', ''
+          tools/package-release.ps1 -Configuration Release -Version $version -PrivateFiles private
+          # Players download it under the same name as before (linked from the README).
+          Copy-Item "dist/PortalReloadedVR-$version.zip" dist/PortalReloadedVR.zip
+
+      - name: Create draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = '${{ github.ref_name }}'
+          [Console]::OutputEncoding = [Text.Encoding]::UTF8
+          if ((git cat-file -t $tag) -eq 'tag') {
+            git tag -l --format='%(contents)' $tag | Set-Content -Encoding utf8NoBOM release-notes.md
+          } else {
+            Write-Warning "$tag is a lightweight tag: no release notes, edit the draft before publishing."
+            Set-Content -Encoding utf8NoBOM release-notes.md ''
+          }
+          gh release create $tag dist/PortalReloadedVR.zip --draft --verify-tag --title $tag --notes-file release-notes.md
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
