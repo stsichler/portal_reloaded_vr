@@ -979,6 +979,8 @@ void VR::UpdateTracking()
         // 64 is the eye view height from the player's base position
         // we subtract this here so that we place the HMD height at the actual player height if 6DOF is enabled
         m_HmdPosRelative.z -= 64;
+    else
+        m_HmdPosRelative.z += m_SeatedHeightOffset;
 
     // Roomscale setup
     /*Vector cameraMovingDirection = m_Center - m_SetupOriginPrev;
@@ -1453,6 +1455,7 @@ void VR::ParseConfigFile()
     parseOrDefault("IPDScale", m_IpdScale, 1.0f);
     parseOrDefault("6DOF", m_6DOF, true);
     parseOrDefault("SeatedMode", m_SeatedMode, false);
+    parseOrDefault("SeatedHeightOffset", m_SeatedHeightOffset, 4.0f);
     /*parseOrDefault("HudDistance", m_HudDistance, 1.3f);
     parseOrDefault("HudSize", m_HudSize, 4.0f);
     parseOrDefault("HudAlwaysVisible", m_HudAlwaysVisible, false);*/

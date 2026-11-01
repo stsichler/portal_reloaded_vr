@@ -195,6 +195,7 @@ public:
 	float m_IpdScale = 1.0;
 	bool m_6DOF = true;
 	bool m_SeatedMode = false;
+	float m_SeatedHeightOffset = 4.0;
 	float m_HudDistance = 1.3;
 	float m_HudSize = 4.0;
 	bool m_HudAlwaysVisible = false;

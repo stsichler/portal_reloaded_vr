@@ -6,6 +6,7 @@ VRScale=43.2 # Real word units to source units scale
 IPDScale=1.0 # Scale of interpupillary distance 
 6DOF=true
 SeatedMode=false
+SeatedHeightOffset=4.0 # Seated mode only: moves the eyes up (+) or down (-) by this many source units, i.e. the virtual floor down or up
 AimMode=2 # 0 = None, 1 = Crosshair (does not work properly), 2 = Laser sight/beam
 AntiAliasing=0 # 0, 2, 4 8
 RenderWindow=0 # Whether or not to render the game a third time for the window, yes you heard it right, so use this wisely
