@@ -132,6 +132,8 @@ int VR::SetActionManifest(const char *fileName)
     m_Input->GetActionHandle("/actions/main/in/ResetPosition", &m_ActionResetPosition);
     m_Input->GetActionHandle("/actions/main/in/Crouch", &m_ActionCrouch);
     m_Input->GetActionHandle("/actions/main/in/Flashlight", &m_ActionFlashlight);
+    m_Input->GetActionHandle("/actions/main/in/QuickPing", &m_ActionQuickPing);
+    m_Input->GetActionHandle("/actions/main/in/RemoteView", &m_ActionRemoteView);
     m_Input->GetActionHandle("/actions/main/in/MenuSelect", &m_MenuSelect);
     m_Input->GetActionHandle("/actions/main/in/MenuBack", &m_MenuBack);
     m_Input->GetActionHandle("/actions/main/in/MenuUp", &m_MenuUp);
@@ -725,6 +727,16 @@ void VR::ProcessInput()
     if (CheckDigitalActionChanged(m_ActionUse, state))
     {
         m_Game->ClientCmd_Unrestricted(state ? "+use" : "-use");
+    }
+
+    if (CheckDigitalActionChanged(m_ActionQuickPing, state))
+    {
+        m_Game->ClientCmd_Unrestricted(state ? "+quick_ping" : "-quick_ping");
+    }
+
+    if (CheckDigitalActionChanged(m_ActionRemoteView, state))
+    {
+        m_Game->ClientCmd_Unrestricted(state ? "+remote_view" : "-remote_view");
     }
 
     if (CheckDigitalActionChanged(m_ActionReload, state))
