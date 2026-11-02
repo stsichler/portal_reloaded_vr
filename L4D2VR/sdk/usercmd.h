@@ -97,23 +97,27 @@ public:
 		impulse = 0;
 	}
 
-	int		command_number;
-	int		tick_count;
-	QAngle	viewangles;
-	float	forwardmove;
-	float	sidemove;
-	float	upmove;
-	int		buttons;
-	byte    impulse;
-	int		weaponselect;
-	int		weaponsubtype;
-	int		random_seed;
-	short	mousedx;
-	short	mousedy;		
-	bool	hasbeenpredicted;
-	char pad[25];
+	// Strata Source (x64), checked in client.dll (WriteUsercmd, CInput::CreateMove): an aim
+	// direction follows the view angles; more fields at the end (portal teleports etc.).
+	int		command_number; //0x08
+	int		tick_count; //0x0C
+	QAngle	viewangles; //0x10
+	Vector	aimdirection; //0x1C
+	float	forwardmove; //0x28
+	float	sidemove; //0x2C
+	float	upmove; //0x30
+	int		buttons; //0x34
+	byte    impulse; //0x38
+	int		weaponselect; //0x3C
+	int		weaponsubtype; //0x40
+	int		random_seed; //0x44
+	short	mousedx; //0x48
+	short	mousedy; //0x4A
+	bool	hasbeenpredicted; //0x4C
+	char pad[0x2B]; //0x4D
 };
-//static_assert(sizeof(CUserCmd) == 0x58);
+static_assert(sizeof(CUserCmd) == 0x78);
+static_assert(offsetof(CUserCmd, forwardmove) == 0x28 && offsetof(CUserCmd, buttons) == 0x34 && offsetof(CUserCmd, mousedx) == 0x48);
 
 class CVerifiedUserCmd
 {

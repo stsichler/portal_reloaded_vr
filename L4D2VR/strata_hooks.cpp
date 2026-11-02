@@ -20,6 +20,14 @@ namespace
     using tRenderView = void (*)(void *thisptr, const CViewSetup &view, const CViewSetup &hudView, int nClearFlags, int whatToDraw);
     tRenderView oRenderView = nullptr;
 
+    // ClientModeShared (client.dll): [24] CreateMove(flInputSampleTime, cmd), called by
+    // CInput::CreateMove; if it returns true, the engine takes over cmd->viewangles as its view
+    // angles.
+    constexpr int kClientMode_CreateMove = 24;
+
+    using tCreateMove = bool (*)(void *thisptr, float flInputSampleTime, CUserCmd *cmd);
+    tCreateMove oCreateMove = nullptr;
+
     Game *g_StrataGame = nullptr;
 
     struct Section
@@ -43,6 +51,61 @@ namespace
             sections.push_back({ begin, begin + section->Misc.VirtualSize });
         }
         return sections;
+    }
+
+    // The player aims with the right controller (view angles of the command: shooting, use) and
+    // walks relative to the head: keyboard and left stick, turned from the head's yaw into the
+    // aim's. The engine's view angles stay with the head (set in hkRenderView).
+    bool hkCreateMove(void *thisptr, float flInputSampleTime, CUserCmd *cmd)
+    {
+        const bool result = oCreateMove(thisptr, flInputSampleTime, cmd);
+
+        VR *vr = g_StrataGame->m_VR;
+        if (!cmd || !cmd->command_number || !vr->m_IsInitialized || !vr->m_IsVREnabled || vr->IsMenuVisible())
+            return result;
+
+        // Keyboard movement is relative to the engine's view angles, i.e. the head.
+        float forward = cmd->forwardmove;
+        float side = cmd->sidemove;
+        vr::InputAnalogActionData_t walk;
+        if (vr->GetAnalogActionData(vr->m_ActionWalk, walk) && walk.bActive)
+        {
+            forward += walk.y * MAX_LINEAR_SPEED;
+            side += walk.x * MAX_LINEAR_SPEED;
+        }
+
+        QAngle aim = vr->m_RightControllerAngAbs;
+        aim.x = std::clamp(aim.x, -89.0f, 89.0f);
+        aim.z = 0;
+
+        // Source: forward = (cos yaw, sin yaw), right = (sin yaw, -cos yaw).
+        const float d = (vr->m_HmdAngAbs.y - aim.y) * 3.14159265f / 180.0f;
+        cmd->forwardmove = forward * cosf(d) + side * sinf(d);
+        cmd->sidemove = -forward * sinf(d) + side * cosf(d);
+        cmd->upmove = 0;
+
+        cmd->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT);
+        if (cmd->forwardmove > 0)
+            cmd->buttons |= IN_FORWARD;
+        else if (cmd->forwardmove < 0)
+            cmd->buttons |= IN_BACK;
+        if (cmd->sidemove > 0)
+            cmd->buttons |= IN_MOVERIGHT;
+        else if (cmd->sidemove < 0)
+            cmd->buttons |= IN_MOVELEFT;
+
+        cmd->viewangles = aim;
+
+        static bool logged = false;
+        if (!logged)
+        {
+            std::cout << "[VR] first VR command #" << cmd->command_number << ": aim " << aim.x << "," << aim.y << " head yaw "
+                      << vr->m_HmdAngAbs.y << ", move " << cmd->forwardmove << "," << cmd->sidemove << "\n";
+            logged = true;
+        }
+
+        // false: the engine keeps its view angles (the head) instead of taking the aim.
+        return false;
     }
 
     // Renders both eyes into the VR textures instead of the one view into the back buffer. Menus
@@ -202,5 +265,19 @@ bool StrataHooks::Init(Game *game)
     std::cout << "[Hooks] CViewRender vtable client.dll+0x" << std::hex << ((uint8_t *)viewRender - (uint8_t *)GetModuleHandleA("client.dll"))
               << ", RenderView +0x" << ((uint8_t *)renderView - (uint8_t *)GetModuleHandleA("client.dll")) << std::dec
               << ": create " << created << ", enable " << enabled << "\n";
-    return enabled == MH_OK;
+
+    // ClientModePortalNormal inherits CreateMove from ClientModeShared.
+    void **clientMode = FindVTable("client.dll", "ClientModeShared");
+    if (!clientMode)
+    {
+        std::cout << "[Hooks] ClientModeShared vtable not found, no VR movement\n";
+        return false;
+    }
+    void *createMove = clientMode[kClientMode_CreateMove];
+    MH_STATUS createdMove = MH_CreateHook(createMove, (void *)&hkCreateMove, reinterpret_cast<void **>(&oCreateMove));
+    MH_STATUS enabledMove = createdMove == MH_OK ? MH_EnableHook(createMove) : createdMove;
+    std::cout << "[Hooks] CreateMove client.dll+0x" << std::hex << ((uint8_t *)createMove - (uint8_t *)GetModuleHandleA("client.dll"))
+              << std::dec << ": create " << createdMove << ", enable " << enabledMove << "\n";
+
+    return enabled == MH_OK && enabledMove == MH_OK;
 }

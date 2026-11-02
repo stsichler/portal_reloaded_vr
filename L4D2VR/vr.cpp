@@ -453,11 +453,16 @@ void VR::Update()
     SubmitVRTextures();
     UpdatePosesAndActions();
     // UpdateTracking reads the local player with the Portal 2 layout (controllers, aim laser);
-    // for Strata Source it needs the gameplay hooks first. Until then only the head.
+    // for Strata Source it needs the gameplay hooks first. Until then head and hands only.
     if (m_Game->m_Hooks)
+    {
         UpdateTracking();
+    }
     else
+    {
         UpdateHeadTracking();
+        UpdateHandTracking();
+    }
 
     if (!m_InitialPosReset)
     {
@@ -702,6 +707,31 @@ void VR::GetPoses()
     };
     vr::TrackedDevicePose_t leftControllerPose = poseOf(leftControllerIndex);
     vr::TrackedDevicePose_t rightControllerPose = poseOf(rightControllerIndex);
+
+    // The hands aim along SteamVR's laser (tip pose) when it is known; otherwise the grip pose,
+    // corrected in UpdateHandTracking.
+    auto useTip = [this](vr::TrackedDevicePose_t &pose, vr::ETrackedControllerRole role)
+    {
+        vr::HmdMatrix34_t tip;
+        if (!pose.bPoseIsValid || GetPointerPose(role, tip) < 0)
+            return false;
+        pose.mDeviceToAbsoluteTracking = tip;
+        return true;
+    };
+    vr::ETrackedControllerRole leftRole = vr::TrackedControllerRole_LeftHand, rightRole = vr::TrackedControllerRole_RightHand;
+    if (m_LeftHanded)
+        std::swap(leftRole, rightRole);
+    m_AimFromTip[1] = useTip(leftControllerPose, leftRole);
+    m_AimFromTip[0] = useTip(rightControllerPose, rightRole);
+    static int loggedTip[2] = { -1, -1 };
+    for (int hand = 0; hand < 2; ++hand)
+    {
+        if (loggedTip[hand] != (int)m_AimFromTip[hand])
+        {
+            std::cout << "[VR] " << (hand ? "left" : "right") << " hand aims along the " << (m_AimFromTip[hand] ? "tip pose" : "grip pose - 30 deg") << "\n";
+            loggedTip[hand] = m_AimFromTip[hand];
+        }
+    }
 
     GetPoseData(hmdPose, m_HmdPose);
     GetPoseData(leftControllerPose, m_LeftControllerPose);
@@ -1176,22 +1206,17 @@ static vr::HmdMatrix34_t ComposePose(const vr::HmdMatrix34_t &a, const vr::HmdMa
     return r;
 }
 
-bool VR::CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHandle, vr::ETrackedControllerRole controllerRole)
+// SteamVR's laser ray is the tip pose (/user/hand/*/pose/tip, pointer actions). Once the menu
+// overlay is interactive, SteamVR suspends the app's input and the action goes inactive, so the
+// tip is kept as an offset to the controller pose (which keeps updating) and the ray comes from
+// that. Without it the menu hit test flipped every frame (flickering laser, no clicks).
+// Returns 0 (controller pose x tip offset), 1 (tip pose action) or -1 (no pose).
+int VR::GetPointerPose(vr::ETrackedControllerRole controllerRole, vr::HmdMatrix34_t &pose)
 {
-    vr::VROverlayIntersectionParams_t  params  = {0};
-    vr::VROverlayIntersectionResults_t results = {0};
-    params.eOrigin = vr::VRCompositor()->GetTrackingSpace();
-
-    // The ray of SteamVR's laser is the tip pose (/user/hand/*/pose/tip, pointer actions). Once the
-    // overlay is interactive, SteamVR suspends the app's input and the action goes inactive, so the
-    // tip is kept as an offset to the controller pose (which keeps updating) and the ray always
-    // comes from that. Without it the hit test flipped every frame (flickering laser, no clicks).
-    // Fallback before the first pointer pose: the render model's "tip" component (missing e.g. on
-    // Quest via Virtual Desktop, then it's the grip pose, which points well below the laser).
     const bool left = controllerRole == vr::TrackedControllerRole_LeftHand;
     vr::InputPoseActionData_t pointer = {};
     const bool havePointer =
-        m_Input->GetPoseActionDataForNextFrame(left ? m_ActionPointerLeft : m_ActionPointerRight, params.eOrigin,
+        m_Input->GetPoseActionDataForNextFrame(left ? m_ActionPointerLeft : m_ActionPointerRight, vr::VRCompositor()->GetTrackingSpace(),
             &pointer, sizeof(pointer), vr::k_ulInvalidInputValueHandle) == vr::VRInputError_None &&
         pointer.bActive && pointer.pose.bPoseIsValid;
 
@@ -1202,31 +1227,42 @@ bool VR::CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHand
     if (havePointer && controllerPose)
     {
         if (!m_HavePointerOffset[left])
-            std::cout << "[VR] menu laser " << (left ? "left" : "right") << ": tip offset learned from the pointer action\n";
+            std::cout << "[VR] laser " << (left ? "left" : "right") << ": tip offset learned from the pointer action\n";
         m_PointerOffset[left] = RelativePose(controllerPose->mDeviceToAbsoluteTracking, pointer.pose.mDeviceToAbsoluteTracking);
         m_HavePointerOffset[left] = true;
     }
 
-    vr::HmdMatrix34_t ray;
-    int source;
     if (controllerPose && m_HavePointerOffset[left])
     {
-        ray = ComposePose(controllerPose->mDeviceToAbsoluteTracking, m_PointerOffset[left]);
-        source = 0;
+        pose = ComposePose(controllerPose->mDeviceToAbsoluteTracking, m_PointerOffset[left]);
+        return 0;
     }
-    else if (havePointer)
+    if (havePointer)
     {
-        ray = pointer.pose.mDeviceToAbsoluteTracking;
-        source = 1;
+        pose = pointer.pose.mDeviceToAbsoluteTracking;
+        return 1;
     }
-    else if (controllerPose)
+    return -1;
+}
+
+bool VR::CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHandle, vr::ETrackedControllerRole controllerRole)
+{
+    vr::VROverlayIntersectionParams_t  params  = {0};
+    vr::VROverlayIntersectionResults_t results = {0};
+    params.eOrigin = vr::VRCompositor()->GetTrackingSpace();
+
+    // Fallback before the first pointer pose: the render model's "tip" component (missing e.g. on
+    // Quest via Virtual Desktop, then it's the grip pose, which points well below the laser).
+    const bool left = controllerRole == vr::TrackedControllerRole_LeftHand;
+    vr::HmdMatrix34_t ray;
+    int source = GetPointerPose(controllerRole, ray);
+    if (source < 0)
     {
-        ray = ComposePose(controllerPose->mDeviceToAbsoluteTracking, GetControllerTipMatrix(controllerRole));
+        const vr::TrackedDeviceIndex_t deviceIndex = m_System->GetTrackedDeviceIndexForControllerRole(controllerRole);
+        if (deviceIndex >= vr::k_unMaxTrackedDeviceCount || !m_Poses[deviceIndex].bPoseIsValid)
+            return false;
+        ray = ComposePose(m_Poses[deviceIndex].mDeviceToAbsoluteTracking, GetControllerTipMatrix(controllerRole));
         source = 2;
-    }
-    else
-    {
-        return false;
     }
 
     static int lastSource[2] = { -1, -1 };
@@ -1391,15 +1427,10 @@ void VR::UpdateHeadTracking()
     m_EyeZ = m_EyeToHeadTransformPosRight.z;
 }
 
-void VR::UpdateTracking()
+// Controller poses -> aim and viewmodel directions, positions relative to the HMD. Needs nothing
+// from the game.
+void VR::UpdateHandTracking()
 {
-    UpdateHeadTracking();
-
-    int playerIndex = m_Game->m_EngineClient->GetLocalPlayer();
-    C_BasePlayer* localPlayer = (C_BasePlayer*)m_Game->GetClientEntity(playerIndex);
-    if (!localPlayer)
-        return;
-
     Vector hmdPosLocal = m_HmdPose.TrackedDevicePos;
 
     // Hand tracking
@@ -1430,14 +1461,16 @@ void VR::UpdateTracking()
     QAngle::AngleVectors(leftControllerAngLocal, &m_LeftControllerForward, &m_LeftControllerRight, &m_LeftControllerUp);
     QAngle::AngleVectors(rightControllerAngLocal, &m_RightControllerForward, &m_RightControllerRight, &m_RightControllerUp);
 
-    const float offset = -30;
+    // The grip pose points above where the hand aims: turn it downward. Not needed with the tip
+    // pose (SteamVR's laser direction), see GetPoses.
+    const float leftOffset = m_AimFromTip[1] ? 0.0f : -30.0f;
+    const float rightOffset = m_AimFromTip[0] ? 0.0f : -30.0f;
 
-    // Adjust controller angle downward
-    m_LeftControllerForward = VectorRotate(m_LeftControllerForward, m_LeftControllerRight, offset);
-    m_LeftControllerUp = VectorRotate(m_LeftControllerUp, m_LeftControllerRight, offset);
+    m_LeftControllerForward = VectorRotate(m_LeftControllerForward, m_LeftControllerRight, leftOffset);
+    m_LeftControllerUp = VectorRotate(m_LeftControllerUp, m_LeftControllerRight, leftOffset);
 
-    m_RightControllerForward = VectorRotate(m_RightControllerForward, m_RightControllerRight, offset);
-    m_RightControllerUp = VectorRotate(m_RightControllerUp, m_RightControllerRight, offset);
+    m_RightControllerForward = VectorRotate(m_RightControllerForward, m_RightControllerRight, rightOffset);
+    m_RightControllerUp = VectorRotate(m_RightControllerUp, m_RightControllerRight, rightOffset);
 
     // controller angles
     QAngle::VectorAngles(m_LeftControllerForward, m_LeftControllerUp, m_LeftControllerAngAbs);
@@ -1465,6 +1498,17 @@ void VR::UpdateTracking()
     // Viewmodel roll offset
     m_ViewmodelRight = VectorRotate(m_ViewmodelRight, m_ViewmodelForward, m_ViewmodelAngOffset.z);
     m_ViewmodelUp = VectorRotate(m_ViewmodelUp, m_ViewmodelForward, m_ViewmodelAngOffset.z);
+}
+
+void VR::UpdateTracking()
+{
+    UpdateHeadTracking();
+    UpdateHandTracking();
+
+    int playerIndex = m_Game->m_EngineClient->GetLocalPlayer();
+    C_BasePlayer* localPlayer = (C_BasePlayer*)m_Game->GetClientEntity(playerIndex);
+    if (!localPlayer)
+        return;
 
     // The aim trace needs the controller pose of this frame (position relative to the HMD and
     // direction, both rotated by m_RotationOffset). Done before they were updated, the laser was

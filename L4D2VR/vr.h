@@ -180,6 +180,7 @@ public:
 	// pointer action is active, because the action goes inactive once the overlay takes input.
 	vr::HmdMatrix34_t m_PointerOffset[2] = {};
 	bool m_HavePointerOffset[2] = { false, false };
+	bool m_AimFromTip[2] = { false, false }; // hand pose is the tip pose (0 = right, 1 = left)
 
 	TrackedDevicePoseData m_HmdPose;
 	TrackedDevicePoseData m_LeftControllerPose;
@@ -231,6 +232,7 @@ public:
 	void ProcessInput();
 	VMatrix VMatrixFromHmdMatrix(const vr::HmdMatrix34_t &hmdMat);
 	vr::HmdMatrix34_t GetControllerTipMatrix(vr::ETrackedControllerRole controllerRole);
+	int GetPointerPose(vr::ETrackedControllerRole controllerRole, vr::HmdMatrix34_t &pose);
 	bool CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHandle, vr::ETrackedControllerRole controllerRole);
 	QAngle GetRightControllerAbsAngle();
 	QAngle& GetRightControllerAbsAngleConst();
@@ -239,6 +241,7 @@ public:
 	QAngle GetRecommendedViewmodelAbsAngle();
 	void UpdateHMDAngles();
 	void UpdateHeadTracking();
+	void UpdateHandTracking();
 	void UpdateTracking();
 	Vector GetViewAngle();
 	Vector GetViewOrigin(Vector setupOrigin);
