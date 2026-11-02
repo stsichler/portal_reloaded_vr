@@ -7,11 +7,16 @@
 #include "offsets.h"
 #include "sigscanner.h"
 
+// Runs in DllMain: the D3D11 callbacks must be in place before the game creates its device.
 Game::Game()
 {
     m_VR = new VR(this);
-    m_VR->initDxvkCallbacks();
+    m_VR->initD3D11Callbacks();
+}
 
+// Runs in a thread of its own, waits for the game's DLLs.
+void Game::init()
+{
     while (!(m_BaseClient = (uintptr_t)GetModuleHandle("client.dll")))
         Sleep(50);
     while (!(m_BaseEngine = (uintptr_t)GetModuleHandle("engine.dll")))
@@ -27,8 +32,8 @@ Game::Game()
     m_EngineTrace = (IEngineTrace *)GetInterface("engine.dll", "EngineTraceClient004");
     m_EngineClient = (IEngineClient *)GetInterface("engine.dll", "VEngineClient015");
     m_MaterialSystem = (IMaterialSystem *)GetInterface("MaterialSystem.dll", "VMaterialSystem080");
-    m_ClientViewRender = (IViewRender *)GetInterface("client.dll", "VEngineRenderView013");
-    m_EngineViewRender = (IViewRender *)GetInterface("engine.dll", "VEngineRenderView013");
+    m_ClientViewRender = (IViewRender *)GetInterface("client.dll", "VEngineRenderView014");
+    m_EngineViewRender = (IViewRender *)GetInterface("engine.dll", "VEngineRenderView014");
     m_ModelInfo = (IModelInfo *)GetInterface("engine.dll", "VModelInfoClient004");
     m_ModelRender = (IModelRender *)GetInterface("engine.dll", "VEngineModel016");
     m_VguiInput = (IInput *)GetInterface("vgui2.dll", "VGUI_InputInternal001");

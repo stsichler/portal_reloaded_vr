@@ -13,28 +13,23 @@ This Repo is intended as a **starting point** for implementation of a VR Mod for
 
 
 ## Things that work
-* Injection of [dxvk](https://github.com/doitsujin/dxvk)-based D3D11 DLL -> game now runs on Vulkan (on Flatscreen, **NO VR!**)
-* OpenVR framework is initialized -> Mod is prepared to re-insert all necessary hooks into game engine and graphics
+* The mod is loaded as a slim `d3d11.dll` wrapper (no dxvk anymore; OpenVR takes D3D11 textures directly)
+* Hooks into D3D11 (device, swap chain, render targets), OpenVR is initialized
 
 ## Things that need fixing
-* Update Source-SDK related files
+* Update Source-SDK related files (x64, Strata Source)
 * Re-establish hooks into game engine
-* Port D3D-related code from D3D9 to D3D11
 
 ## Build instructions
 1. Clone Repository
 2. Run ```git submodule update --init --recursive```
-3. Run ```dxvk-apply-patches.bat```
-4. Open l4d2vr.sln
-5. Set to x64 Debug or Release
-6. Build -> Build Solution
+3. Open l4d2vr.sln, set to x64 (Debug, Release or RelWithDebInfo), build
 
-Note: After building, it will attempt to copy the new ```d3d11.dll``` and ```dxgi.dll``` to your ```Portal Revolution/bin/win64``` directory.
+Note: After building, it will attempt to copy the new ```d3d11.dll``` to your ```Portal Revolution/bin/win64``` directory.
 
 ## How to use
-* Set these launch options for Portal Revolution:
-  
-  ```-insecure -window -novid +mat_motion_blur_percent_of_screen_max 0 +mat_queue_mode 0 +mat_vsync 0 +mat_antialias 0 +mat_grain_scale_override 0 -width 1280 -height 720```
+* Copy the contents of ```L4D2VR``` (```config.txt```, ```manifest.vrmanifest```, ```SteamVRActionManifest```) and ```thirdparty/openvr/bin/win64/openvr_api.dll``` to ```Portal Revolution/VR/```
+* The mod sets the required launch options itself.
 
 ## Based on
 * Brilliant Portal 2 VR mod from [Gistix](https://github.com/Gistix/portal2vr)
@@ -44,5 +39,4 @@ Note: After building, it will attempt to copy the new ```d3d11.dll``` and ```dxg
 ## Utilizes code from
 * [VirtualFortress2](https://github.com/PinkMilkProductions/VirtualFortress2)
 * [gmcl_openvr](https://github.com/Planimeter/gmcl_openvr/)
-* [dxvk](https://github.com/TheIronWolfModding/dxvk/tree/vr-dx9-rel)
 * [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013/)

@@ -13,25 +13,7 @@
 #include <thread>
 #include <type_traits>
 #include <algorithm>
-//#include <d3d11_vr.h>
-
-
-namespace dxvk
-{
-//    extern std::function<void(D3DPRESENT_PARAMETERS* pPresentationParameters)> D3D9InterfaceEx_CreateDevice_Pre_Callback;
-//    extern std::function<void(IDirect3DDevice9* pDevice)> D3D9InterfaceEx_CreateDevice_Post_Callback;
-//
-//    extern std::function<void(D3DPRESENT_PARAMETERS* pPresentationParameters)> D3D9DeviceEx_Reset_Callback;
-//
-//    extern std::function<void(D3D9_COMMON_TEXTURE_DESC& desc)> D3D9DeviceEx_CreateTexture_Pre_Callback;
-//    extern std::function<void(const Com<D3D9Texture2D>& texture)> D3D9DeviceEx_CreateTexture_Post_Callback;
-//
-//    extern std::function<void(D3D9_COMMON_TEXTURE_DESC& desc)> D3D9DeviceEx_CreateDepthStencilSurfaceEx_Pre_Callback;
-//
-//    extern std::function<void(const D3DVIEWPORT9* pViewport)> D3D9DeviceEx_SetViewport_Callback;
-//
-//    extern std::function<void(D3D9DeviceEx* pDevice)> D3D9DeviceEx_PresentEx_Callback;
-}
+#include "d3d11_hooks.h"
 
 VR::VR(Game *game) 
 {
@@ -40,6 +22,8 @@ VR::VR(Game *game)
 
 void VR::init()
 {
+    InitOpenVR(); // loads the mod's openvr_api.dll
+
     char errorString[MAX_STR_LEN];
 
     vr::HmdError error = vr::VRInitError_None;
@@ -96,10 +80,7 @@ void VR::init()
     std::thread configParser(&VR::WaitForConfigUpdate, this);
     configParser.detach();
 
-   // while (!g_D3DVR11) 
-   //     Sleep(10);
-
-   // g_D3DVR11->GetBackBufferData(&m_VKBackBuffer);
+   // The menu overlay shows m_VKBackBuffer, a copy of the back buffer made in Present_Pre_Callback.
    // m_Overlay = vr::VROverlay();
    // m_Overlay->CreateOverlay("MenuOverlayKey", "MenuOverlay", &m_MainMenuHandle);
    // //m_Overlay->CreateOverlay("HUDOverlayKey", "HUDOverlay", &m_HUDHandle);
@@ -128,125 +109,165 @@ void VR::init()
     m_IsInitialized = true;
 }
 
-void VR::initDxvkCallbacks()
+// The game ships its own, older openvr_api.dll in bin\win64, next to this mod. openvr_api.dll is
+// delay-loaded, so the mod's copy from <game>\VR\ is loaded before the first OpenVR call.
+static void LoadModOpenVR()
 {
-//    dxvk::D3D9InterfaceEx_CreateDevice_Pre_Callback = [this](D3DPRESENT_PARAMETERS* pPresentationParameters)
-//        {
-//            vr::HmdError error = vr::VRInitError_None;
-//            vr::IVRSystem* system = vr::VR_Init(&error, vr::VRApplication_Scene);
-//
-//            if (error == vr::VRInitError_None)
-//            {
-//                // Override viewport size
-//                uint32_t renderWidth, renderHeight;
-//                system->GetRecommendedRenderTargetSize(&renderWidth, &renderHeight);
-//                pPresentationParameters->BackBufferWidth = renderWidth;
-//                pPresentationParameters->BackBufferHeight = renderHeight;
-//            }
-//            else
-//            {
-//                char errorString[256];
-//                snprintf(errorString, 256, "VR_Init failed: %s", vr::VR_GetVRInitErrorAsEnglishDescription(error));
-//                MessageBox(0, errorString, "DXVK", MB_ICONERROR | MB_OK);
-//                ExitProcess(0);
-//            }
-//        };
-//
-//    dxvk::D3D9InterfaceEx_CreateDevice_Post_Callback = [this](IDirect3DDevice9* pDevice)
-//        {
-//            Direct3DCreateVRImpl(pDevice, &g_D3DVR9);
-//        };
-//
-//    dxvk::D3D9DeviceEx_Reset_Callback = [this](D3DPRESENT_PARAMETERS* pPresentationParameters)
-//        {
-//            pPresentationParameters->BackBufferWidth = m_RenderWidth;
-//            pPresentationParameters->BackBufferHeight = m_RenderHeight;
-//        };
-//
-//    dxvk::D3D9DeviceEx_CreateTexture_Pre_Callback = [this](dxvk::D3D9_COMMON_TEXTURE_DESC& desc)
-//        {
-//            if (m_CreatingTextureID == VR::Texture_LeftEye || m_CreatingTextureID == VR::Texture_RightEye)
-//            {
-//                dxvk::Logger::info(dxvk::str::format("Creating texture with MSAA ", m_AntiAliasing));
-//                desc.MultiSample = MapToMultisampleType(m_AntiAliasing);
-//            }
-//        };
-//
-//    dxvk::D3D9DeviceEx_CreateTexture_Post_Callback = [this](const dxvk::Com<dxvk::D3D9Texture2D>& texture)
-//        {
-//            if (m_CreatingTextureID != VR::Texture_None)
-//            {
-//                vr::VRVulkanTextureData_t vulkanData;
-//                memset(&vulkanData, 0, sizeof(vr::VRVulkanTextureData_t));
-//
-//                SharedTextureHolder* textureTarget;
-//                D3D9_TEXTURE_VR_DESC texDesc;
-//                VR::TextureID texID = m_CreatingTextureID;
-//
-//                if (texID == VR::Texture_LeftEye)
-//                {
-//                    textureTarget = &m_VKLeftEye;
-//                    texture.ref()->GetSurfaceLevel(0, &m_D9LeftEyeSurface);
-//                    g_D3DVR9->GetVRDesc(m_D9LeftEyeSurface, &texDesc);
-//                }
-//                else if (texID == VR::Texture_RightEye)
-//                {
-//                    textureTarget = &m_VKRightEye;
-//                    texture.ref()->GetSurfaceLevel(0, &m_D9RightEyeSurface);
-//                    g_D3DVR9->GetVRDesc(m_D9RightEyeSurface, &texDesc);
-//                }
-//                else if (texID == VR::Texture_HUD)
-//                {
-//                    textureTarget = &m_VKHUD;
-//                    texture.ref()->GetSurfaceLevel(0, &m_D9HUDSurface);
-//                    g_D3DVR9->GetVRDesc(m_D9HUDSurface, &texDesc);
-//                }
-//                else if (texID == VR::Texture_Blank)
-//                {
-//                    textureTarget = &m_VKBlankTexture;
-//                    texture.ref()->GetSurfaceLevel(0, &m_D9BlankSurface);
-//                    g_D3DVR9->GetVRDesc(m_D9BlankSurface, &texDesc);
-//                }
-//
-//                memcpy(&textureTarget->m_VulkanData, &texDesc, sizeof(vr::VRVulkanTextureData_t));
-//                textureTarget->m_VRTexture.handle = &textureTarget->m_VulkanData;
-//                textureTarget->m_VRTexture.eColorSpace = vr::ColorSpace_Auto;
-//                textureTarget->m_VRTexture.eType = vr::TextureType_Vulkan;
-//            }
-//        };
-//
-//    dxvk::D3D9DeviceEx_SetViewport_Callback = [this](const D3DVIEWPORT9* pViewport)
-//        {
-//            // TODO: Overriding the viewport in-game will mess up the shadows, so only do it in the menu for now.
-//            if (m_IsInitialized && !m_Game->m_EngineClient->IsInGame())
-//            {
-//                D3DVIEWPORT9* newViewport = const_cast<D3DVIEWPORT9*>(pViewport);
-//                newViewport->Width = m_RenderWidth;
-//                newViewport->Height = m_RenderHeight;
-//            }
-//        };
-//
-//    dxvk::D3D9DeviceEx_CreateDepthStencilSurfaceEx_Pre_Callback = [this](dxvk::D3D9_COMMON_TEXTURE_DESC& desc)
-//        {
-//            if (m_CreatingTextureID == VR::Texture_LeftEye || m_CreatingTextureID == VR::Texture_RightEye)
-//            {
-//                dxvk::Logger::info(dxvk::str::format("Creating depth/stencil surface with MSAA ", m_AntiAliasing));
-//                desc.MultiSample = MapToMultisampleType(m_AntiAliasing);
-//            }
-//        };
-//
-//    dxvk::D3D9DeviceEx_PresentEx_Callback = [this](dxvk::D3D9DeviceEx* pDevice)
-//        {
-//            if (m_CreatedVRTextures) {
-//                pDevice->ResolveImage(dxvk::GetCommonTexture(m_D9LeftEyeSurface));
-//                pDevice->ResolveImage(dxvk::GetCommonTexture(m_D9RightEyeSurface));
-//            }
-//
-//            if (m_IsVREnabled && g_D3DVR9)
-//                g_D3DVR9->WaitDeviceIdle();
-//
-//            Update();
-//        };
+    static bool done = false;
+    if (done)
+        return;
+    done = true;
+
+    if (GetModuleHandleA("openvr_api.dll"))
+    {
+        std::cout << "[OpenVR] openvr_api.dll was already loaded by someone else\n";
+        return;
+    }
+    char currentDir[MAX_STR_LEN];
+    GetCurrentDirectory(MAX_STR_LEN, currentDir);
+    char path[MAX_STR_LEN];
+    sprintf_s(path, MAX_STR_LEN, "%s\VR\openvr_api.dll", currentDir);
+    HMODULE module = LoadLibraryA(path);
+    std::cout << "[OpenVR] " << path << (module ? " loaded" : " NOT found, using the game's openvr_api.dll") << "\n";
+}
+
+bool VR::InitOpenVR()
+{
+    static bool initialized = false;
+    if (initialized)
+        return true;
+
+    LoadModOpenVR();
+
+    vr::HmdError error = vr::VRInitError_None;
+    vr::IVRSystem *system = vr::VR_Init(&error, vr::VRApplication_Scene);
+    if (error != vr::VRInitError_None)
+    {
+        char errorString[MAX_STR_LEN];
+        snprintf(errorString, MAX_STR_LEN, "VR_Init failed: %s", vr::VR_GetVRInitErrorAsEnglishDescription(error));
+        Game::errorMsg(errorString);
+        ExitProcess(0);
+    }
+
+    system->GetRecommendedRenderTargetSize(&m_RenderWidth, &m_RenderHeight);
+    std::cout << "[OpenVR] initialized, render target " << m_RenderWidth << "x" << m_RenderHeight << "\n";
+    initialized = true;
+    return true;
+}
+
+// Copies the game's back buffer into m_VKBackBuffer, which the menu overlay shows. A copy,
+// because back buffers can't be handed to OpenVR (and with the flip model change every frame).
+void VR::CopyBackBuffer(IDXGISwapChain *swapChain)
+{
+    ID3D11Texture2D *backBuffer = nullptr;
+    if (!D3D11Hooks::g_Device || FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer)))
+        return;
+
+    D3D11_TEXTURE2D_DESC desc;
+    backBuffer->GetDesc(&desc);
+
+    if (!m_VKBackBuffer.m_Texture || m_VKBackBuffer.m_Width != desc.Width || m_VKBackBuffer.m_Height != desc.Height)
+    {
+        if (m_VKBackBuffer.m_Texture)
+            m_VKBackBuffer.m_Texture->Release();
+        m_VKBackBuffer = SharedTextureHolder();
+
+        D3D11_TEXTURE2D_DESC copyDesc = desc;
+        copyDesc.MipLevels = 1;
+        copyDesc.ArraySize = 1;
+        copyDesc.SampleDesc = { 1, 0 };
+        copyDesc.Usage = D3D11_USAGE_DEFAULT;
+        copyDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        copyDesc.CPUAccessFlags = 0;
+        copyDesc.MiscFlags = 0;
+        if (FAILED(D3D11Hooks::g_Device->CreateTexture2D(&copyDesc, nullptr, &m_VKBackBuffer.m_Texture)))
+        {
+            std::cout << "[D3D11] could not create the back buffer copy\n";
+            backBuffer->Release();
+            return;
+        }
+        m_VKBackBuffer.m_Width = desc.Width;
+        m_VKBackBuffer.m_Height = desc.Height;
+        m_VKBackBuffer.m_VRTexture.handle = m_VKBackBuffer.m_Texture;
+    }
+
+    if (desc.SampleDesc.Count > 1)
+        D3D11Hooks::g_Context->ResolveSubresource(m_VKBackBuffer.m_Texture, 0, backBuffer, 0, desc.Format);
+    else
+        D3D11Hooks::g_Context->CopyResource(m_VKBackBuffer.m_Texture, backBuffer);
+    backBuffer->Release();
+}
+
+void VR::initD3D11Callbacks()
+{
+    // The game renders at the HMD resolution: the back buffer is shown on the menu overlay, the
+    // eye textures are created with the same size.
+    D3D11Hooks::SwapChainSize_Callback = [this](UINT &width, UINT &height)
+        {
+            if (!InitOpenVR())
+                return;
+            width = m_RenderWidth;
+            height = m_RenderHeight;
+        };
+
+    D3D11Hooks::CreateTexture2D_Pre_Callback = [this](D3D11_TEXTURE2D_DESC &desc)
+        {
+            // TODO: MSAA (AntiAliasing) for the eye textures. With D3D11 this also needs the views
+            // the game creates for them (TEXTURE2DMS) and a resolve before submitting.
+            static bool warned = false;
+            if ((m_CreatingTextureID == VR::Texture_LeftEye || m_CreatingTextureID == VR::Texture_RightEye) &&
+                m_AntiAliasing > 1 && !warned)
+            {
+                std::cout << "[D3D11] AntiAliasing=" << m_AntiAliasing << " is not supported yet, ignored\n";
+                warned = true;
+            }
+        };
+
+    D3D11Hooks::CreateTexture2D_Post_Callback = [this](ID3D11Texture2D *texture, const D3D11_TEXTURE2D_DESC &desc)
+        {
+            // CreateNamedRenderTargetTextureEx may also create a depth texture; only the color
+            // render target is submitted.
+            if (m_CreatingTextureID == VR::Texture_None || !(desc.BindFlags & D3D11_BIND_RENDER_TARGET))
+                return;
+
+            SharedTextureHolder *target = nullptr;
+            switch (m_CreatingTextureID)
+            {
+            case VR::Texture_LeftEye: target = &m_VKLeftEye; break;
+            case VR::Texture_RightEye: target = &m_VKRightEye; break;
+            case VR::Texture_HUD: target = &m_VKHUD; break;
+            case VR::Texture_Blank: target = &m_VKBlankTexture; break;
+            default: return;
+            }
+
+            target->m_Texture = texture;
+            target->m_Width = desc.Width;
+            target->m_Height = desc.Height;
+            target->m_VRTexture.handle = texture;
+            std::cout << "[D3D11] VR texture " << m_CreatingTextureID << ": " << desc.Width << "x" << desc.Height
+                      << " format=" << desc.Format << "\n";
+        };
+
+    D3D11Hooks::SetViewports_Callback = [this](UINT count, D3D11_VIEWPORT *viewports)
+        {
+            // TODO: Overriding the viewport in-game will mess up the shadows, so only do it in the menu for now.
+            if (m_IsInitialized && !m_Game->m_EngineClient->IsInGame())
+            {
+                viewports[0].Width = (float)m_RenderWidth;
+                viewports[0].Height = (float)m_RenderHeight;
+            }
+        };
+
+    D3D11Hooks::Present_Pre_Callback = [this](IDXGISwapChain *swapChain)
+        {
+            if (m_IsInitialized)
+                CopyBackBuffer(swapChain);
+        };
+
+    D3D11Hooks::Present_Post_Callback = [this](IDXGISwapChain *)
+        {
+            Update();
+        };
 }
 
 int VR::SetActionManifest(const char *fileName) 
@@ -508,8 +529,8 @@ void VR::RepositionOverlays()
     vr::ETrackingUniverseOrigin trackingOrigin = vr::VRCompositor()->GetTrackingSpace();
 
     // Reposition main menu overlay
-    float renderWidth = m_VKBackBuffer.m_VulkanData.m_nWidth;
-    float renderHeight = m_VKBackBuffer.m_VulkanData.m_nHeight;
+    float renderWidth = m_VKBackBuffer.m_Width;
+    float renderHeight = m_VKBackBuffer.m_Height;
 
     float widthRatio = windowWidth / renderWidth;
     float heightRatio = windowHeight / renderHeight;

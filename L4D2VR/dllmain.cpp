@@ -73,11 +73,13 @@ static LONG CALLBACK CrashLogger(EXCEPTION_POINTERS *ep)
         std::cout << " (" << (ep->ExceptionRecord->ExceptionInformation[0] == 0 ? "read" : "write")
                   << " of 0x" << ep->ExceptionRecord->ExceptionInformation[1] << ")";
     const CONTEXT *c = ep->ContextRecord;
-    std::cout << "\n[CRASH] eax=" << c->Eax << " ebx=" << c->Ebx << " ecx=" << c->Ecx << " edx=" << c->Edx
-              << " esi=" << c->Esi << " edi=" << c->Edi << " ebp=" << c->Ebp << " esp=" << c->Esp << "\n";
+    std::cout << "\n[CRASH] rax=" << c->Rax << " rbx=" << c->Rbx << " rcx=" << c->Rcx << " rdx=" << c->Rdx
+              << " rsi=" << c->Rsi << " rdi=" << c->Rdi << " rbp=" << c->Rbp << " rsp=" << c->Rsp
+              << "\n[CRASH] r8=" << c->R8 << " r9=" << c->R9 << " r10=" << c->R10 << " r11=" << c->R11
+              << " r12=" << c->R12 << " r13=" << c->R13 << " r14=" << c->R14 << " r15=" << c->R15 << "\n";
 
     // Poor man's backtrace: stack words that point into executable module memory.
-    const uintptr_t *stack = (const uintptr_t *)c->Esp;
+    const uintptr_t *stack = (const uintptr_t *)c->Rsp;
     int found = 0;
     for (int i = 0; i < 512 && found < 24; ++i)
     {
@@ -90,7 +92,7 @@ static LONG CALLBACK CrashLogger(EXCEPTION_POINTERS *ep)
         uintptr_t off = 0;
         if (const char *m = ModuleOf((const void *)word, off))
         {
-            std::cout << "[CRASH]   esp+0x" << i * 4 << ": " << m << "+0x" << off << "\n";
+            std::cout << "[CRASH]   rsp+0x" << i * sizeof(uintptr_t) << ": " << m << "+0x" << off << "\n";
             ++found;
         }
     }
@@ -99,16 +101,17 @@ static LONG CALLBACK CrashLogger(EXCEPTION_POINTERS *ep)
 }
 #endif
 
-// The first entries of tier0's ICommandLine. Checked against the vtable in Portal Reloaded's
-// tier0.dll; the order is the one of the Source SDK 2013, with MSVC putting the overloaded
-// CreateCmdLine(int, char**) first.
+// The first entries of tier0's ICommandLine. Checked against the vtable of CCommandLine in
+// Portal Revolution's tier0.dll (Strata Source): like CS:GO it has HasParm after CheckParm,
+// which shifts RemoveParm and AppendParm by one compared to the Source SDK 2013.
 class ICommandLine
 {
 public:
-    virtual void CreateCmdLineArgv(int argc, char **argv) = 0;
     virtual void CreateCmdLine(const char *commandline) = 0;
+    virtual void CreateCmdLineArgv(int argc, char **argv) = 0;
     virtual const char *GetCmdLine() const = 0;
     virtual const char *CheckParm(const char *psz, const char **ppszValue = nullptr) const = 0;
+    virtual bool HasParm(const char *psz) const = 0;
     virtual void RemoveParm(const char *parm) = 0;
     virtual void AppendParm(const char *pszParm, const char *pszValues) = 0;
 };
@@ -117,7 +120,7 @@ public:
 static std::string g_LaunchOptionsLog;
 
 // Adds the launch options the mod needs to the engine's command line, so players don't have to
-// set them in Steam. Runs in DllMain: d3d9.dll is a static import of shaderapidx9.dll, which the
+// set them in Steam. Runs in DllMain: d3d11.dll is a static import of shaderapidx11.dll, which the
 // launcher loads before the engine reads the video mode options, starts the intro video or runs
 // the "+" commands. Options the player set (also contrary ones like -fullscreen) are left alone.
 // Returns false if tier0's command line isn't available.
@@ -170,10 +173,9 @@ static bool AddLaunchOptions()
     return true;
 }
 
-DWORD WINAPI InitL4D2VR(HMODULE hModule)
-{
-// Release if buggy, so we'll be releasing the debug binary
 #ifdef L4D2VR_DIAGNOSTICS
+static void SetupDiagnostics()
+{
     // Everything written to std::cout goes to l4d2vr_debug.log, flushed after every write, so it
     // survives a crash. A console window is only opened if the environment variable
     // L4D2VR_CONSOLE is set: the window takes the focus from the game, and with Steam Link that
@@ -190,11 +192,12 @@ DWORD WINAPI InitL4D2VR(HMODULE hModule)
     std::cout.rdbuf(&teeBuf);
     std::cout << std::unitbuf;
     AddVectoredExceptionHandler(1, CrashLogger);
-    std::cout << g_LaunchOptionsLog;
+}
 #endif
 
-    g_Game = new Game();
-
+DWORD WINAPI InitL4D2VR(HMODULE hModule)
+{
+    g_Game->init();
     return 0;
 }
 
@@ -215,6 +218,12 @@ BOOL APIENTRY DllMain( HMODULE hModule,
                     ExitProcess(0);
                 g_LaunchOptionsLog = "[LaunchOptions] tier0 CommandLine() not found, nothing added\n";
             }
+#ifdef L4D2VR_DIAGNOSTICS
+            SetupDiagnostics();
+            std::cout << g_LaunchOptionsLog;
+#endif
+            // Synchronously: the D3D11 callbacks must be set before shaderapidx11 creates the device.
+            g_Game = new Game();
             CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)InitL4D2VR, hModule, 0, NULL);
     case DLL_THREAD_ATTACH:
     case DLL_THREAD_DETACH:

@@ -10,32 +10,25 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "l4d2vr", "L4D2VR\l4d2vr.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libMinHook", "thirdparty\minhook\build\VC17\libMinHook.vcxproj", "{F142A341-5EE0-442D-A15F-98AE9B48DBAE}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libdisplay-info", "thirdparty\libdisplay-info\libdisplay-info.vcxproj", "{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dxgi", "L4D2VR\dxgi.vcxproj", "{52DF1B26-9778-40AE-98D7-288CC8236006}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Release|x64 = Release|x64
+		RelWithDebInfo|x64 = RelWithDebInfo|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{C81EA18A-A8D0-40D2-900C-A91F736802D4}.Debug|x64.ActiveCfg = Debug|x64
 		{C81EA18A-A8D0-40D2-900C-A91F736802D4}.Debug|x64.Build.0 = Debug|x64
 		{C81EA18A-A8D0-40D2-900C-A91F736802D4}.Release|x64.ActiveCfg = Release|x64
 		{C81EA18A-A8D0-40D2-900C-A91F736802D4}.Release|x64.Build.0 = Release|x64
+		{C81EA18A-A8D0-40D2-900C-A91F736802D4}.RelWithDebInfo|x64.ActiveCfg = RelWithDebInfo|x64
+		{C81EA18A-A8D0-40D2-900C-A91F736802D4}.RelWithDebInfo|x64.Build.0 = RelWithDebInfo|x64
 		{F142A341-5EE0-442D-A15F-98AE9B48DBAE}.Debug|x64.ActiveCfg = Debug|x64
 		{F142A341-5EE0-442D-A15F-98AE9B48DBAE}.Debug|x64.Build.0 = Debug|x64
 		{F142A341-5EE0-442D-A15F-98AE9B48DBAE}.Release|x64.ActiveCfg = Release|x64
 		{F142A341-5EE0-442D-A15F-98AE9B48DBAE}.Release|x64.Build.0 = Release|x64
-		{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}.Debug|x64.ActiveCfg = Debug|x64
-		{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}.Debug|x64.Build.0 = Debug|x64
-		{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}.Release|x64.ActiveCfg = Release|x64
-		{8F79CBFB-76E5-4E98-8896-58C07F3F5FA5}.Release|x64.Build.0 = Release|x64
-		{52DF1B26-9778-40AE-98D7-288CC8236006}.Debug|x64.ActiveCfg = Debug|x64
-		{52DF1B26-9778-40AE-98D7-288CC8236006}.Debug|x64.Build.0 = Debug|x64
-		{52DF1B26-9778-40AE-98D7-288CC8236006}.Release|x64.ActiveCfg = Release|x64
-		{52DF1B26-9778-40AE-98D7-288CC8236006}.Release|x64.Build.0 = Release|x64
+		{F142A341-5EE0-442D-A15F-98AE9B48DBAE}.RelWithDebInfo|x64.ActiveCfg = Release|x64
+		{F142A341-5EE0-442D-A15F-98AE9B48DBAE}.RelWithDebInfo|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

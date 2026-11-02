@@ -9,7 +9,9 @@
 
 Hooks::Hooks(Game *game)
 {
-	if (MH_Initialize() != MH_OK)
+	// The D3D11 hooks may have initialized MinHook already.
+	MH_STATUS mhStatus = MH_Initialize();
+	if (mhStatus != MH_OK && mhStatus != MH_ERROR_ALREADY_INITIALIZED)
 	{
 		Game::errorMsg("Failed to init MinHook");
 	}

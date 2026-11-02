@@ -6,9 +6,8 @@
 #define MAX_STR_LEN 256
 
 class Game;
-class IDirect3DTexture9;
-class IDirect3DSurface9;
 class ITexture;
+struct ID3D11Texture2D;
 
 
 struct TrackedDevicePoseData 
@@ -20,10 +19,13 @@ struct TrackedDevicePoseData
 	QAngle TrackedDeviceAngVel;
 };
 
+// A D3D11 texture handed to OpenVR (vr::TextureType_DirectX).
 struct SharedTextureHolder 
 {
-	vr::VRVulkanTextureData_t m_VulkanData;
-	vr::Texture_t m_VRTexture;
+	ID3D11Texture2D *m_Texture = nullptr;
+	uint32_t m_Width = 0;
+	uint32_t m_Height = 0;
+	vr::Texture_t m_VRTexture = { nullptr, vr::TextureType_DirectX, vr::ColorSpace_Auto };
 };
 
 class VR
@@ -121,14 +123,9 @@ public:
 	ITexture *m_HUDTexture;
 	ITexture *m_BlankTexture = nullptr;
 
-	IDirect3DSurface9 *m_D9LeftEyeSurface;
-	IDirect3DSurface9 *m_D9RightEyeSurface;
-	IDirect3DSurface9 *m_D9HUDSurface;
-	IDirect3DSurface9 *m_D9BlankSurface;
-
 	SharedTextureHolder m_VKLeftEye;
 	SharedTextureHolder m_VKRightEye;
-	SharedTextureHolder m_VKBackBuffer;
+	SharedTextureHolder m_VKBackBuffer; // copy of the game's back buffer (menu overlay)
 	SharedTextureHolder m_VKHUD;
 	SharedTextureHolder m_VKBlankTexture;
 
@@ -205,7 +202,9 @@ public:
 	float m_CameraUprightRecoverySpeed = 0.2f; // If the above is `true`, this controls how quickly the camera turns back upright after portalling
 
 	VR(Game *game);
-	void initDxvkCallbacks();
+	void initD3D11Callbacks();
+	bool InitOpenVR(); // VR_Init, done before the game creates its swap chain
+	void CopyBackBuffer(struct IDXGISwapChain *swapChain);
 	void init();
 	int SetActionManifest(const char *fileName);
 	void InstallApplicationManifest(const char *fileName);
