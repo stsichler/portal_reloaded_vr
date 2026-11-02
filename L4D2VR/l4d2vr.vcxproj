@@ -180,6 +180,7 @@
     <ClInclude Include="sdk\vector.h" />
     <ClInclude Include="sdk\worldsize.h" />
     <ClInclude Include="sigscanner.h" />
+    <ClInclude Include="strata_hooks.h" />
     <ClInclude Include="vr.h" />
   </ItemGroup>
   <ItemGroup>
@@ -191,6 +192,7 @@
     <ClCompile Include="sdk\bitbuf.cpp" />
     <ClCompile Include="sdk\checksum_crc.cpp" />
     <ClCompile Include="sdk\newbitbuf.cpp" />
+    <ClCompile Include="strata_hooks.cpp" />
     <ClCompile Include="vr.cpp" />
   </ItemGroup>
   <ItemGroup>

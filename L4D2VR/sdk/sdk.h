@@ -180,9 +180,35 @@ public:
 	void SetViewAngles(QAngle &angle) { CallVirtual<void>(this, 54, &angle); }
 	bool IsInGame() { return CallVirtual<bool>(this, 61); }                               // signon state == 6
 	bool IsConnected() { return CallVirtual<bool>(this, 63); }                            // signon state >= 2
-	// NOT VERIFIED: candidate [129] takes (const char *, bool). Only used for VR input in game.
+	// Cbuf_AddText(current player, cmd, source) without the ClientCmd restrictions; [128] is the
+	// overload with a player slot (MSVC puts overloads in reverse order).
 	void ClientCmd_Unrestricted(const char *szCmdString) { CallVirtual<void>(this, 129, szCmdString, false); }
 };
+
+// VMaterialSystem080 of Strata Source (materialsystem.dll, vtable of CMaterialSystem). The
+// IMaterialSystem declaration in material.h is the Portal 2 layout and must not be called.
+namespace StrataMaterialSystem
+{
+	// Begin/EndRenderTargetAllocation refuse to run once this is set ("Tried
+	// BeginRenderTargetAllocation after game startup").
+	inline bool &GameStarted(IMaterialSystem *ms) { return *reinterpret_cast<bool *>(reinterpret_cast<char *>(ms) + 0xfd0); }
+	inline void BeginRenderTargetAllocation(IMaterialSystem *ms) { CallVirtual<void>(ms, 93); }
+	inline void EndRenderTargetAllocation(IMaterialSystem *ms) { CallVirtual<void>(ms, 94); }
+	inline ITexture *CreateNamedRenderTargetTextureEx(IMaterialSystem *ms, const char *name, int w, int h,
+		RenderTargetSizeMode_t sizeMode, ImageFormat format, MaterialRenderTargetDepth_t depth,
+		unsigned int textureFlags, unsigned int renderTargetFlags)
+	{
+		return CallVirtual<ITexture *>(ms, 96, name, w, h, sizeMode, format, depth, textureFlags, renderTargetFlags);
+	}
+	inline IMatRenderContext *GetRenderContext(IMaterialSystem *ms) { return CallVirtual<IMatRenderContext *>(ms, 114); } // AddRef'd
+}
+
+// IMatRenderContext of Strata Source (CMatRenderContext / CMatQueuedRenderContext).
+namespace StrataRenderContext
+{
+	inline void Release(IMatRenderContext *ctx) { CallVirtual<int>(ctx, 1); }
+	inline void SetRenderTarget(IMatRenderContext *ctx, ITexture *texture) { CallVirtual<void>(ctx, 6, texture); } // SetRenderTargetEx(0, texture)
+}
 
 class IModelInfo
 {
@@ -243,45 +269,44 @@ enum MotionBlurMode_t
 
 class VMatrix;
 
+// Strata Source (x64) layout, checked in client.dll (CViewRender::Render/RenderView, the inline
+// constructor of the HUD view): the fields from fov on are 0x50 further back than in Portal 2,
+// the order is the same. Fields after m_flAspectRatio are not used by the mod.
 class CViewSetup
 {
 public:
-	inline char* STR() {
-		char errorString[512];
-		sprintf_s(errorString, 512, "X: %i (%i), Y: %i (%i)", x, m_nUnscaledX, y, m_nUnscaledY, width, m_nUnscaledWidth, height, m_nUnscaledHeight, fov, fovViewmodel);
-		return errorString;
-	}
-
 	int32_t x; //0x0000
-	float m_nUnscaledX; //0x0004
+	int32_t m_nUnscaledX; //0x0004
 	int32_t y; //0x0008
-	float m_nUnscaledY; //0x000C
+	int32_t m_nUnscaledY; //0x000C
 	int32_t width; //0x0010
 	int32_t m_nUnscaledWidth; //0x0014
 	int32_t height; //0x0018
 	int32_t m_nUnscaledHeight; //0x001C
-	char pad_0020[72]; //0x0020
-	float fov; //0x0068
-	float fovViewmodel; //0x006C
-	Vector origin; //0x0070
-	Vector angles; //0x007C
-	float zNear; //0x0088
-	float zFar; //0x008C
-	float zNearViewmodel; //0x0090
-	float zFarViewmodel; //0x0094
-	float m_flAspectRatio; //0x0098
-	float m_flNearBlurDepth; //0x009C
-	float m_flNearFocusDepth; //0x00A0
-	float m_flFarFocusDepth; //0x00A4
-	float m_flFarBlurDepth; //0x00A8
-	float m_flNearBlurRadius; //0x00AC
-	float m_flFarBlurRadius; //0x00B0
-	int m_nDoFQuality; //0x00B4
-	MotionBlurMode_t m_nMotionBlurMode; //0x00B8
-	char pad_00bc[68]; //0x00BC
-	int32_t m_EdgeBlur; //0x0100
-}; //Size: 0x0104
-//static_assert(sizeof(CViewSetup) == 0x0104);
+	char pad_0020[152]; //0x0020
+	float fov; //0x00B8
+	float fovViewmodel; //0x00BC
+	Vector origin; //0x00C0
+	Vector angles; //0x00CC
+	float zNear; //0x00D8
+	float zFar; //0x00DC
+	float zNearViewmodel; //0x00E0
+	float zFarViewmodel; //0x00E4
+	float m_flAspectRatio; //0x00E8
+	float m_flNearBlurDepth; //0x00EC
+	float m_flNearFocusDepth; //0x00F0
+	float m_flFarFocusDepth; //0x00F4
+	float m_flFarBlurDepth; //0x00F8
+	float m_flNearBlurRadius; //0x00FC
+	float m_flFarBlurRadius; //0x0100
+	int m_nDoFQuality; //0x0104
+	MotionBlurMode_t m_nMotionBlurMode; //0x0108
+	char pad_010c[68]; //0x010C
+	int32_t m_EdgeBlur; //0x0150
+	char pad_0154[4]; //0x0154
+}; //Size: 0x0158 (stride of CViewRender's per-player views)
+static_assert(sizeof(CViewSetup) == 0x158);
+static_assert(offsetof(CViewSetup, fov) == 0xB8 && offsetof(CViewSetup, origin) == 0xC0 && offsetof(CViewSetup, m_flAspectRatio) == 0xE8);
 
 class IBaseClientDLL
 {

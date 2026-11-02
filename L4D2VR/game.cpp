@@ -6,6 +6,7 @@
 #include "hooks.h"
 #include "offsets.h"
 #include "sigscanner.h"
+#include "strata_hooks.h"
 
 // Runs in DllMain: the D3D11 callbacks must be in place before the game creates its device.
 Game::Game()
@@ -50,6 +51,7 @@ void Game::init()
 //    m_ClientMode = **(IClientMode***)(m_Offsets->g_pClientMode.address);
 
     m_VR->init();
+    StrataHooks::Init(this);
 //    m_Hooks = new Hooks(this);
 
     m_Initialized = true;

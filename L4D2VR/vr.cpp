@@ -100,10 +100,9 @@ void VR::init()
 
     UpdatePosesAndActions();
 
-    // Not yet: m_IsVREnabled turns on the in-game VR (stereo rendering, tracking, VR input), which
-    // needs the engine hooks (Hooks) for Strata Source first. Until then the game is shown on
-    // the menu overlay, also in game.
-    // m_IsVREnabled = true;
+    // In-game VR: stereo rendering (StrataHooks), head tracking, VR input. Controllers, movement
+    // and the gameplay hooks are still missing.
+    m_IsVREnabled = true;
 
     m_IsInitialized = true;
     std::cout << "[VR] initialized, menu overlay created\n";
@@ -447,34 +446,18 @@ void VR::Update()
     if (!m_IsInitialized || !m_Game->m_Initialized)
         return;
 
-    
-
-    if (m_IsVREnabled)
-    {
-        bool inGame = m_Game->m_EngineClient->IsInGame();
-
-        //SetScreenSizeOverride(inGame);
-
-        // Prevents crashing at menu
-        if (!inGame)
-        {
-            IMatRenderContext *rndrContext = m_Game->m_MaterialSystem->GetRenderContext();
-            rndrContext->SetRenderTarget(NULL);
-            rndrContext->Release();
-
-            m_Game->m_CachedArmsModel = false;
-            m_CreatedVRTextures = false; // Have to recreate textures otherwise some workshop maps won't render
-        } 
-    }
+    // The Portal 2 version reset the render target here and recreated the eye textures after
+    // each map change (workshop maps). Not here: this runs on the render thread with queued
+    // rendering, and the RenderView hook resets the render target itself.
 
     SubmitVRTextures();
     UpdatePosesAndActions();
-    // UpdateTracking reads the local player with the Portal 2 layout; for Strata Source it needs
-    // the engine hooks first. Until then only the poses (overlay, menu laser).
+    // UpdateTracking reads the local player with the Portal 2 layout (controllers, aim laser);
+    // for Strata Source it needs the gameplay hooks first. Until then only the head.
     if (m_Game->m_Hooks)
         UpdateTracking();
     else
-        GetPoses();
+        UpdateHeadTracking();
 
     if (!m_InitialPosReset)
     {
@@ -504,37 +487,40 @@ void VR::Update()
     }
 }
 
+// Eye render targets, created through the material system (the engine renders into ITextures);
+// CreateTexture2D_Post_Callback picks up their D3D11 textures for the submit. Called from the
+// RenderView hook (main thread). The blank texture is created directly with D3D11
+// (CreateBlankTexture), the HUD texture is not needed yet.
 void VR::CreateVRTextures()
 {
-    int windowWidth, windowHeight;
+    m_CreatedVRTextures = true; // once, also if it fails
 
-    IMatRenderContext* rndrContext = m_Game->m_MaterialSystem->GetRenderContext();
-    rndrContext->GetWindowSize(windowWidth, windowHeight);
-    rndrContext->Release();
+    IMaterialSystem *materialSystem = m_Game->m_MaterialSystem;
+    // Same format as the back buffer (B8G8R8A8_UNORM).
+    const ImageFormat format = IMAGE_FORMAT_BGRA8888;
 
-    std::cout << "RenderTexture - Width: " << m_RenderWidth << ", Height: " << m_RenderHeight << "\n";
-
-    m_Game->m_MaterialSystem->isGameRunning = false;
-    m_Game->m_MaterialSystem->BeginRenderTargetAllocation();
-    m_Game->m_MaterialSystem->isGameRunning = true;
+    // Render targets may only be allocated before the game has started; the flag is set again
+    // before the textures are created, as in the Portal 2 version.
+    bool &gameStarted = StrataMaterialSystem::GameStarted(materialSystem);
+    const bool wasStarted = gameStarted;
+    gameStarted = false;
+    StrataMaterialSystem::BeginRenderTargetAllocation(materialSystem);
+    gameStarted = wasStarted;
 
     m_CreatingTextureID = Texture_LeftEye;
-    m_LeftEyeTexture = m_Game->m_MaterialSystem->CreateNamedRenderTargetTextureEx("leftEye0", m_RenderWidth, m_RenderHeight, RT_SIZE_NO_CHANGE, m_Game->m_MaterialSystem->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SEPARATE, TEXTUREFLAGS_NOMIP);
-    
-    m_CreatingTextureID = Texture_RightEye;
-    m_RightEyeTexture = m_Game->m_MaterialSystem->CreateNamedRenderTargetTextureEx("rightEye0", m_RenderWidth, m_RenderHeight, RT_SIZE_NO_CHANGE, m_Game->m_MaterialSystem->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SEPARATE, TEXTUREFLAGS_NOMIP);
+    m_LeftEyeTexture = StrataMaterialSystem::CreateNamedRenderTargetTextureEx(materialSystem, "vrLeftEye", m_RenderWidth, m_RenderHeight,
+        RT_SIZE_NO_CHANGE, format, MATERIAL_RT_DEPTH_SEPARATE, TEXTUREFLAGS_NOMIP, 0);
 
-    m_CreatingTextureID = Texture_HUD;
-    m_HUDTexture = m_Game->m_MaterialSystem->CreateNamedRenderTargetTextureEx("vrHUD", m_RenderWidth, m_RenderHeight, RT_SIZE_NO_CHANGE, m_Game->m_MaterialSystem->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, TEXTUREFLAGS_NOMIP);
-    
-    m_CreatingTextureID = Texture_Blank;
-    m_BlankTexture = m_Game->m_MaterialSystem->CreateNamedRenderTargetTextureEx("blankTexture", 512, 512, RT_SIZE_NO_CHANGE, m_Game->m_MaterialSystem->GetBackBufferFormat(), MATERIAL_RT_DEPTH_SHARED, TEXTUREFLAGS_NOMIP);
-    
+    m_CreatingTextureID = Texture_RightEye;
+    m_RightEyeTexture = StrataMaterialSystem::CreateNamedRenderTargetTextureEx(materialSystem, "vrRightEye", m_RenderWidth, m_RenderHeight,
+        RT_SIZE_NO_CHANGE, format, MATERIAL_RT_DEPTH_SEPARATE, TEXTUREFLAGS_NOMIP, 0);
+
     m_CreatingTextureID = Texture_None;
 
-    m_Game->m_MaterialSystem->EndRenderTargetAllocation();
+    StrataMaterialSystem::EndRenderTargetAllocation(materialSystem);
 
-    m_CreatedVRTextures = true;
+    std::cout << "[VR] eye render targets " << m_RenderWidth << "x" << m_RenderHeight << " (game started " << wasStarted << "): "
+              << m_LeftEyeTexture << "/" << m_RightEyeTexture << ", D3D11 " << m_VKLeftEye.m_Texture << "/" << m_VKRightEye.m_Texture << "\n";
 }
 
 void VR::SubmitVRTextures()
@@ -1333,16 +1319,12 @@ void VR::ResetPosition()
         m_Center.z = 0;
 }
 
-void VR::UpdateTracking()
+// HMD pose -> view angles, position relative to the player's eyes, eye distance. Needs nothing
+// from the game.
+void VR::UpdateHeadTracking()
 {
     GetPoses();
 
-    int playerIndex = m_Game->m_EngineClient->GetLocalPlayer();
-    C_BasePlayer* localPlayer = (C_BasePlayer*)m_Game->GetClientEntity(playerIndex);
-    if (!localPlayer)
-        return;
-
-    // HMD tracking
     Vector hmdPosLocal = m_HmdPose.TrackedDevicePos;
     Vector hmdPosCentered = hmdPosLocal - m_Center;
 
@@ -1407,6 +1389,18 @@ void VR::UpdateTracking()
     GetViewParameters();
     m_Ipd = m_EyeToHeadTransformPosRight.x * 2;
     m_EyeZ = m_EyeToHeadTransformPosRight.z;
+}
+
+void VR::UpdateTracking()
+{
+    UpdateHeadTracking();
+
+    int playerIndex = m_Game->m_EngineClient->GetLocalPlayer();
+    C_BasePlayer* localPlayer = (C_BasePlayer*)m_Game->GetClientEntity(playerIndex);
+    if (!localPlayer)
+        return;
+
+    Vector hmdPosLocal = m_HmdPose.TrackedDevicePos;
 
     // Hand tracking
     Vector leftControllerPosLocal = m_LeftControllerPose.TrackedDevicePos;
