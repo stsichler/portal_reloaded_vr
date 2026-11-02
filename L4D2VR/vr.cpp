@@ -843,8 +843,19 @@ void VR::ProcessMenuInput()
                 break;
 
             case vr::VREvent_ScrollDiscrete:
-                m_Game->m_VguiInput->InternalMouseWheeled((int)vrEvent.data.scroll.ydelta);
+            {
+                // Panorama, like the mouse above: a wheel message (120 per notch) to the window.
+                const int delta = (int)(vrEvent.data.scroll.ydelta * WHEEL_DELTA);
+                static int logged = 0;
+                if (logged < 10)
+                {
+                    std::cout << "[VR] menu scroll " << vrEvent.data.scroll.ydelta << " -> wheel " << delta << "\n";
+                    ++logged;
+                }
+                if (window && delta)
+                    PostMessage(window, WM_MOUSEWHEEL, MAKEWPARAM(0, (short)delta), 0);
                 break;
+            }
             }
         }
     }
