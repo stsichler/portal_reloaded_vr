@@ -1150,17 +1150,46 @@ vr::HmdMatrix34_t VR::GetControllerTipMatrix(vr::ETrackedControllerRole controll
     return identity;
 }
 
+// Rigid poses: 'to' relative to 'from' (inverse(from) * to), and a * b.
+static vr::HmdMatrix34_t RelativePose(const vr::HmdMatrix34_t &from, const vr::HmdMatrix34_t &to)
+{
+    vr::HmdMatrix34_t r = {};
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+            for (int k = 0; k < 3; ++k)
+                r.m[i][j] += from.m[k][i] * to.m[k][j];
+        for (int k = 0; k < 3; ++k)
+            r.m[i][3] += from.m[k][i] * (to.m[k][3] - from.m[k][3]);
+    }
+    return r;
+}
+
+static vr::HmdMatrix34_t ComposePose(const vr::HmdMatrix34_t &a, const vr::HmdMatrix34_t &b)
+{
+    vr::HmdMatrix34_t r = {};
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 4; ++j)
+            for (int k = 0; k < 3; ++k)
+                r.m[i][j] += a.m[i][k] * b.m[k][j];
+        r.m[i][3] += a.m[i][3];
+    }
+    return r;
+}
+
 bool VR::CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHandle, vr::ETrackedControllerRole controllerRole)
 {
     vr::VROverlayIntersectionParams_t  params  = {0};
     vr::VROverlayIntersectionResults_t results = {0};
     params.eOrigin = vr::VRCompositor()->GetTrackingSpace();
 
-    // The ray of SteamVR's laser: the tip pose (/user/hand/*/pose/tip) via the pointer actions.
-    // Fallback: controller pose times the "tip" component of its render model. With controllers
-    // whose render model has no tip component (e.g. Quest via Virtual Desktop) that is the grip
-    // pose, which points well below the laser: the overlay became interactive when pointing
-    // above it, and the laser missed the menu.
+    // The ray of SteamVR's laser is the tip pose (/user/hand/*/pose/tip, pointer actions). Once the
+    // overlay is interactive, SteamVR suspends the app's input and the action goes inactive, so the
+    // tip is kept as an offset to the controller pose (which keeps updating) and the ray always
+    // comes from that. Without it the hit test flipped every frame (flickering laser, no clicks).
+    // Fallback before the first pointer pose: the render model's "tip" component (missing e.g. on
+    // Quest via Virtual Desktop, then it's the grip pose, which points well below the laser).
     const bool left = controllerRole == vr::TrackedControllerRole_LeftHand;
     vr::InputPoseActionData_t pointer = {};
     const bool havePointer =
@@ -1168,40 +1197,50 @@ bool VR::CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHand
             &pointer, sizeof(pointer), vr::k_ulInvalidInputValueHandle) == vr::VRInputError_None &&
         pointer.bActive && pointer.pose.bPoseIsValid;
 
-    static int lastSource[2] = { -1, -1 };
-    if (lastSource[left] != (int)havePointer)
+    const vr::TrackedDeviceIndex_t deviceIndex = m_System->GetTrackedDeviceIndexForControllerRole(controllerRole);
+    const vr::TrackedDevicePose_t *controllerPose =
+        deviceIndex < vr::k_unMaxTrackedDeviceCount && m_Poses[deviceIndex].bPoseIsValid ? &m_Poses[deviceIndex] : nullptr;
+
+    if (havePointer && controllerPose)
     {
-        std::cout << "[VR] menu laser " << (left ? "left" : "right") << ": "
-                  << (havePointer ? "tip pose action" : "fallback (render model tip)") << "\n";
-        lastSource[left] = havePointer;
+        if (!m_HavePointerOffset[left])
+            std::cout << "[VR] menu laser " << (left ? "left" : "right") << ": tip offset learned from the pointer action\n";
+        m_PointerOffset[left] = RelativePose(controllerPose->mDeviceToAbsoluteTracking, pointer.pose.mDeviceToAbsoluteTracking);
+        m_HavePointerOffset[left] = true;
     }
 
-    if (havePointer)
+    vr::HmdMatrix34_t ray;
+    int source;
+    if (controllerPose && m_HavePointerOffset[left])
     {
-        const vr::HmdMatrix34_t &m = pointer.pose.mDeviceToAbsoluteTracking;
-        params.vSource    = { m.m[0][3], m.m[1][3], m.m[2][3] };
-        params.vDirection = { -m.m[0][2], -m.m[1][2], -m.m[2][2] };
+        ray = ComposePose(controllerPose->mDeviceToAbsoluteTracking, m_PointerOffset[left]);
+        source = 0;
+    }
+    else if (havePointer)
+    {
+        ray = pointer.pose.mDeviceToAbsoluteTracking;
+        source = 1;
+    }
+    else if (controllerPose)
+    {
+        ray = ComposePose(controllerPose->mDeviceToAbsoluteTracking, GetControllerTipMatrix(controllerRole));
+        source = 2;
     }
     else
     {
-        vr::TrackedDeviceIndex_t deviceIndex = m_System->GetTrackedDeviceIndexForControllerRole(controllerRole);
-
-        if (deviceIndex >= vr::k_unMaxTrackedDeviceCount)
-            return false;
-
-        vr::TrackedDevicePose_t &controllerPose = m_Poses[deviceIndex];
-
-        if (!controllerPose.bPoseIsValid)
-            return false;
-
-        VMatrix controllerVMatrix = VMatrixFromHmdMatrix(controllerPose.mDeviceToAbsoluteTracking);
-        VMatrix tipVMatrix        = VMatrixFromHmdMatrix(GetControllerTipMatrix(controllerRole));
-        tipVMatrix.MatrixMul(controllerVMatrix, controllerVMatrix);
-
-        params.vSource    = { controllerVMatrix.m[3][0],  controllerVMatrix.m[3][1],  controllerVMatrix.m[3][2]};
-        params.vDirection = {-controllerVMatrix.m[2][0], -controllerVMatrix.m[2][1], -controllerVMatrix.m[2][2]};
+        return false;
     }
 
+    static int lastSource[2] = { -1, -1 };
+    if (lastSource[left] != source)
+    {
+        static const char *const names[] = { "controller pose x tip offset", "tip pose action", "fallback (render model tip)" };
+        std::cout << "[VR] menu laser " << (left ? "left" : "right") << ": " << names[source] << "\n";
+        lastSource[left] = source;
+    }
+
+    params.vSource    = { ray.m[0][3], ray.m[1][3], ray.m[2][3] };
+    params.vDirection = { -ray.m[0][2], -ray.m[1][2], -ray.m[2][2] };
     return m_Overlay->ComputeOverlayIntersection(overlayHandle, &params, &results);
 }
 

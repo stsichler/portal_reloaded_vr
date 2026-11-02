@@ -176,6 +176,10 @@ public:
 	vr::VRActionHandle_t m_ThirdAttack;
 	vr::VRActionHandle_t m_ActionPointerLeft;  // pose at /user/hand/left/pose/tip (menu laser)
 	vr::VRActionHandle_t m_ActionPointerRight;
+	// Tip pose relative to the controller pose, per hand (0 = right, 1 = left); learned while the
+	// pointer action is active, because the action goes inactive once the overlay takes input.
+	vr::HmdMatrix34_t m_PointerOffset[2] = {};
+	bool m_HavePointerOffset[2] = { false, false };
 
 	TrackedDevicePoseData m_HmdPose;
 	TrackedDevicePoseData m_LeftControllerPose;
