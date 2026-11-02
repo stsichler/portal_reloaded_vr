@@ -791,54 +791,69 @@ void VR::ProcessMenuInput()
         int windowWidth, windowHeight;
         GetWindowSize(windowWidth, windowHeight);
 
+        // Laser position on the overlay (texture pixels, origin bottom left) -> game window client
+        // coordinates (the engine's view of the screen).
+        auto toWindow = [&](const vr::VREvent_Mouse_t &mouse, int &x, int &y)
+        {
+            float laserX = mouse.x;
+            float laserY = mouse.y;
+            if (!IsMenuVisible()) // same choice of the shown texture area as in SubmitVRTextures
+            {
+                laserY -= (m_RenderHeight - windowHeight);
+                laserY = windowHeight - laserY;
+            }
+            else // main menu (uses render sized texture)
+            {
+                laserX = (laserX / m_RenderWidth) * windowWidth;
+                laserY = ((-laserY + m_RenderHeight) / m_RenderHeight) * windowHeight;
+            }
+            x = (int)laserX;
+            y = (int)laserY;
+        };
+
+        // The menu is Panorama; it gets the mouse from inputsystem.dll, which subclasses the game
+        // window. So mouse messages go straight to that window (SendInput hit whatever was under
+        // the real cursor, and only if the game had the focus).
+        DXGI_SWAP_CHAIN_DESC swapDesc;
+        const HWND window = D3D11Hooks::g_SwapChain && SUCCEEDED(D3D11Hooks::g_SwapChain->GetDesc(&swapDesc))
+            ? swapDesc.OutputWindow : nullptr;
+
         vr::VREvent_t vrEvent;
         while (vr::VROverlay()->PollNextOverlayEvent(currentOverlay, &vrEvent, sizeof(vrEvent)))
         {
-            INPUT input;
+            int x, y;
             switch (vrEvent.eventType)
             {
             case vr::VREvent_MouseMove:
+                toWindow(vrEvent.data.mouse, x, y);
+                m_Game->m_VguiInput->SetCursorPos(x, y);
+                if (window)
+                    PostMessage(window, WM_MOUSEMOVE, 0, MAKELPARAM(x, y));
+                break;
+
+            case vr::VREvent_MouseButtonDown:
             {
-                float laserX = vrEvent.data.mouse.x;
-                float laserY = vrEvent.data.mouse.y;
-
-                if (!IsMenuVisible()) // same choice of the shown texture area as in SubmitVRTextures
+                toWindow(vrEvent.data.mouse, x, y);
+                POINT cursor = {};
+                GetCursorPos(&cursor);
+                if (window)
+                    ScreenToClient(window, &cursor);
+                std::cout << "[VR] menu click at overlay " << vrEvent.data.mouse.x << "," << vrEvent.data.mouse.y
+                          << " -> window " << x << "," << y << " (cursor " << cursor.x << "," << cursor.y
+                          << ", game window " << (window ? "found" : "NOT found")
+                          << (window && GetForegroundWindow() == window ? ", foreground" : ", NOT foreground") << ")\n";
+                if (window)
                 {
-                    laserY -= (m_RenderHeight - windowHeight);
-                    laserY = windowHeight - laserY;
+                    PostMessage(window, WM_MOUSEMOVE, 0, MAKELPARAM(x, y));
+                    PostMessage(window, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM(x, y));
                 }
-                else // main menu (uses render sized texture)
-                {
-                    laserX = (laserX / m_RenderWidth) * windowWidth;
-                    laserY = ((-laserY + m_RenderHeight) / m_RenderHeight) * windowHeight;
-                }
-
-                m_Game->m_VguiInput->SetCursorPos(laserX, laserY);
                 break;
             }
 
-            case vr::VREvent_MouseButtonDown:
-                std::cout << "[VR] menu click at overlay " << vrEvent.data.mouse.x << "," << vrEvent.data.mouse.y << "\n";
-                // Don't allow holding down the mouse down in the pause menu. The resume button can be clicked before
-                // the MouseButtonUp event is polled, which causes issues with the overlay.
-                if (currentOverlay == m_MainMenuHandle)
-                {
-                    input.type = INPUT_MOUSE;
-                    input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-                    SendInput(1, &input, sizeof(INPUT));
-                }
-                break;
-
             case vr::VREvent_MouseButtonUp:
-                /*if (currentOverlay == m_HUDHandle)
-                {
-                    input.type = INPUT_MOUSE;
-                    input.mi.dwFlags = MOUSEEVENTF_LEFTDOWN;
-                    SendInput(1, &input, sizeof(INPUT));
-                }*/
-                input.type = INPUT_MOUSE;
-                input.mi.dwFlags = MOUSEEVENTF_LEFTUP;
-                SendInput(1, &input, sizeof(INPUT));
+                toWindow(vrEvent.data.mouse, x, y);
+                if (window)
+                    PostMessage(window, WM_LBUTTONUP, 0, MAKELPARAM(x, y));
                 break;
 
             case vr::VREvent_ScrollDiscrete:
