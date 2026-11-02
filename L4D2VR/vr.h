@@ -205,6 +205,8 @@ public:
 	void initD3D11Callbacks();
 	bool InitOpenVR(); // VR_Init, done before the game creates its swap chain
 	void CopyBackBuffer(struct IDXGISwapChain *swapChain);
+	void GetWindowSize(int &width, int &height);
+	void CreateBlankTexture();
 	void init();
 	int SetActionManifest(const char *fileName);
 	void InstallApplicationManifest(const char *fileName);

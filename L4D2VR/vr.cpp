@@ -13,6 +13,7 @@
 #include <thread>
 #include <type_traits>
 #include <algorithm>
+#include <vector>
 #include "d3d11_hooks.h"
 
 VR::VR(Game *game) 
@@ -80,33 +81,77 @@ void VR::init()
     std::thread configParser(&VR::WaitForConfigUpdate, this);
     configParser.detach();
 
-   // The menu overlay shows m_VKBackBuffer, a copy of the back buffer made in Present_Pre_Callback.
-   // m_Overlay = vr::VROverlay();
-   // m_Overlay->CreateOverlay("MenuOverlayKey", "MenuOverlay", &m_MainMenuHandle);
-   // //m_Overlay->CreateOverlay("HUDOverlayKey", "HUDOverlay", &m_HUDHandle);
-   // m_Overlay->SetOverlayInputMethod(m_MainMenuHandle, vr::VROverlayInputMethod_Mouse);
-   //// m_Overlay->SetOverlayInputMethod(m_HUDHandle, vr::VROverlayInputMethod_Mouse);
-   // m_Overlay->SetOverlayFlag(m_MainMenuHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
-   // //m_Overlay->SetOverlayFlag(m_HUDHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
+    // The menu overlay shows m_VKBackBuffer, a copy of the back buffer made in Present_Pre_Callback.
+    m_Overlay = vr::VROverlay();
+    m_Overlay->CreateOverlay("MenuOverlayKey", "MenuOverlay", &m_MainMenuHandle);
+    //m_Overlay->CreateOverlay("HUDOverlayKey", "HUDOverlay", &m_HUDHandle);
+    m_Overlay->SetOverlayInputMethod(m_MainMenuHandle, vr::VROverlayInputMethod_Mouse);
+    //m_Overlay->SetOverlayInputMethod(m_HUDHandle, vr::VROverlayInputMethod_Mouse);
+    m_Overlay->SetOverlayFlag(m_MainMenuHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
+    //m_Overlay->SetOverlayFlag(m_HUDHandle, vr::VROverlayFlags_SendVRDiscreteScrollEvents, true);
 
-   // int windowWidth, windowHeight;
-   // m_Game->m_MaterialSystem->GetRenderContext()->GetWindowSize(windowWidth, windowHeight);
+    const vr::HmdVector2_t mouseScaleMenu = { (float)m_RenderWidth, (float)m_RenderHeight };
+    m_Overlay->SetOverlayCurvature(m_MainMenuHandle, 0.15f);
+    m_Overlay->SetOverlayMouseScale(m_MainMenuHandle, &mouseScaleMenu);
 
-   // //const vr::HmdVector2_t mouseScaleHUD = {windowWidth, windowHeight};
-   // //m_Overlay->SetOverlayMouseScale(m_HUDHandle, &mouseScaleHUD);
+    vr::VRCompositor()->SetTrackingSpace(m_SeatedMode
+        ? vr::TrackingUniverseSeated
+        : vr::TrackingUniverseStanding);
 
-   // const vr::HmdVector2_t mouseScaleMenu = {m_RenderWidth, m_RenderHeight};
-   // m_Overlay->SetOverlayCurvature(m_MainMenuHandle, 0.15f);
-   // m_Overlay->SetOverlayMouseScale(m_MainMenuHandle, &mouseScaleMenu);
+    UpdatePosesAndActions();
 
-   // vr::VRCompositor()->SetTrackingSpace(m_SeatedMode 
-   //     ? vr::TrackingUniverseSeated
-   //     : vr::TrackingUniverseStanding);
-
-   // UpdatePosesAndActions();
-   // m_IsVREnabled = true;
+    // Not yet: m_IsVREnabled turns on the in-game VR (stereo rendering, tracking, VR input), which
+    // needs the engine hooks (Hooks) for Strata Source first. Until then the game is shown on
+    // the menu overlay, also in game.
+    // m_IsVREnabled = true;
 
     m_IsInitialized = true;
+    std::cout << "[VR] initialized, menu overlay created\n";
+}
+
+// Size of the game window's client area (what the engine renders the menu for).
+void VR::GetWindowSize(int &width, int &height)
+{
+    width = 1280;
+    height = 720;
+    DXGI_SWAP_CHAIN_DESC desc;
+    RECT rect;
+    if (D3D11Hooks::g_SwapChain && SUCCEEDED(D3D11Hooks::g_SwapChain->GetDesc(&desc)) &&
+        GetClientRect(desc.OutputWindow, &rect) && rect.right > 0 && rect.bottom > 0)
+    {
+        width = rect.right;
+        height = rect.bottom;
+    }
+}
+
+// Black texture submitted to both eyes while only the overlay is shown. Created directly with
+// D3D11 (the material system of Strata Source isn't hooked yet).
+void VR::CreateBlankTexture()
+{
+    if (m_VKBlankTexture.m_Texture || !D3D11Hooks::g_Device)
+        return;
+
+    const UINT size = 64;
+    std::vector<uint32_t> pixels(size * size, 0xff000000); // opaque black
+    D3D11_TEXTURE2D_DESC desc = {};
+    desc.Width = size;
+    desc.Height = size;
+    desc.MipLevels = 1;
+    desc.ArraySize = 1;
+    desc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    desc.SampleDesc = { 1, 0 };
+    desc.Usage = D3D11_USAGE_DEFAULT;
+    desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+    D3D11_SUBRESOURCE_DATA data = { pixels.data(), size * sizeof(uint32_t), 0 };
+
+    if (FAILED(D3D11Hooks::g_Device->CreateTexture2D(&desc, &data, &m_VKBlankTexture.m_Texture)))
+    {
+        std::cout << "[D3D11] could not create the blank texture\n";
+        return;
+    }
+    m_VKBlankTexture.m_Width = size;
+    m_VKBlankTexture.m_Height = size;
+    m_VKBlankTexture.m_VRTexture.handle = m_VKBlankTexture.m_Texture;
 }
 
 // The game ships its own, older openvr_api.dll in bin\win64, next to this mod. openvr_api.dll is
@@ -375,7 +420,12 @@ void VR::Update()
 
     SubmitVRTextures();
     UpdatePosesAndActions();
-    UpdateTracking();
+    // UpdateTracking reads the local player with the Portal 2 layout; for Strata Source it needs
+    // the engine hooks first. Until then only the poses (overlay, menu laser).
+    if (m_Game->m_Hooks)
+        UpdateTracking();
+    else
+        GetPoses();
 
     if (!m_InitialPosReset)
     {
@@ -428,8 +478,9 @@ void VR::SubmitVRTextures()
 {
     if (!m_RenderedNewFrame)
     {
-        if (!m_BlankTexture)
-            CreateVRTextures();
+        CreateBlankTexture();
+        if (!m_VKBackBuffer.m_Texture || !m_VKBlankTexture.m_Texture)
+            return;
 
         if (!vr::VROverlay()->IsOverlayVisible(m_MainMenuHandle))
             RepositionOverlays();
@@ -440,9 +491,7 @@ void VR::SubmitVRTextures()
             // menu only renders to the window portion of the texture. Until we figure out a proper fix,
             // as a workaround only show that portion of the texture
             int windowWidth, windowHeight;
-            IMatRenderContext* rndrContext = m_Game->m_MaterialSystem->GetRenderContext();
-            rndrContext->GetWindowSize(windowWidth, windowHeight);
-            rndrContext->Release();
+            GetWindowSize(windowWidth, windowHeight);
 
             bounds.uMax = (float)windowWidth / m_RenderWidth;
             bounds.vMax = (float)windowHeight / m_RenderHeight;
@@ -517,7 +566,7 @@ void VR::RepositionOverlays()
     Vector hmdForward = { -hmdMat.m[0][2], 0, -hmdMat.m[2][2] };
 
     int windowWidth, windowHeight;
-    m_Game->m_MaterialSystem->GetRenderContext()->GetWindowSize(windowWidth, windowHeight);
+    GetWindowSize(windowWidth, windowHeight);
 
     vr::HmdMatrix34_t menuTransform = 
     {
@@ -660,7 +709,7 @@ void VR::ProcessMenuInput()
         vr::VROverlay()->SetOverlayFlag(currentOverlay, vr::VROverlayFlags_MakeOverlaysInteractiveIfVisible, true);
 
         int windowWidth, windowHeight;
-        m_Game->m_MaterialSystem->GetRenderContext()->GetWindowSize(windowWidth, windowHeight);
+        GetWindowSize(windowWidth, windowHeight);
 
         vr::VREvent_t vrEvent;
         while (vr::VROverlay()->PollNextOverlayEvent(currentOverlay, &vrEvent, sizeof(vrEvent)))

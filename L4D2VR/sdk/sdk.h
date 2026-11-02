@@ -80,6 +80,8 @@ struct PositionAngle
 	QAngle angle;
 };
 
+// VClientEntityList003. Strata Source: GetClientEntity is index 3 here too (checked, vtable of the
+// IClientEntityList base of CClientEntityList in client.dll); the other entries are not checked.
 class IClientEntityList
 {
 public:
@@ -149,118 +151,29 @@ public:
 	virtual bool IsThirdPersonCamera() = 0;
 };
 
+// Calls the virtual function with the given vtable index. Used for the interfaces whose layout
+// differs in Strata Source (Portal: Revolution, x64) from the Portal 2 SDK: only methods whose
+// index was checked in the game's binaries are declared (see dev-notes, VTABLES).
+template <typename R, typename... Args>
+inline R CallVirtual(const void *object, int index, Args... args)
+{
+	using Fn = R(*)(const void *, Args...); // x64: one calling convention, 'this' first
+	return (*reinterpret_cast<Fn const *const *>(object))[index](object, args...);
+}
+
+// VEngineClient015 of Strata Source (engine.dll, vtable of CEngineClient). The vtable starts with
+// 37 entries of another base class; the known IVEngineClient methods follow, with changes.
 class IEngineClient
 {
 public:
-	virtual void *GetIntersectingSurfaces() = 0;
-	virtual void *GetLightForPoint() = 0;
-	virtual void *TraceLineMaterialAndLighting() = 0;
-	virtual void *ParseFile() = 0;
-	virtual void *CopyLocalFile() = 0;
-	virtual void *GetScreenSize() = 0;
-	virtual void *ServerCmd() = 0;
-	virtual void *ClientCmd(const char *szCmdString) = 0;
-	virtual bool GetPlayerInfo(int ent_num, player_info_t *pinfo) = 0;
-	virtual int GetPlayerForUserID(int userID) = 0;
-	virtual void TextMessageGet(char const*) = 0;
-	virtual bool Con_IsVisible() = 0;
-	virtual int GetLocalPlayer(void) = 0;
-	virtual int fn13() = 0;
-	virtual int fn14() = 0;
-	virtual int fn15() = 0;
-	virtual int fn16() = 0;
-	virtual int fn17() = 0;
-	virtual QAngle* GetViewAngles(QAngle &angle) = 0;
-	virtual QAngle* SetViewAngles(QAngle &angle) = 0;
-	virtual void *sub_1005D230() = 0;
-	virtual void *sub_1005D280() = 0;
-	virtual void *sub_1005D2A0() = 0;
-	virtual void *sub_1005D2C0() = 0;
-	virtual void *sub_1005D2D0() = 0;
-	virtual bool IsInGame() = 0;
-	virtual void *sub_1005F150() = 0;
-	virtual void *sub_1005D2F0() = 0;
-	virtual void *sub_1005D300() = 0;
-	virtual void *sub_1005D350() = 0;
-	virtual void *sub_1005D3B0() = 0;
-	virtual void *sub_1005D430() = 0;
-	virtual void *sub_1005D460() = 0;
-	virtual void *sub_1005D5A0() = 0;
-	virtual void *sub_1005D4F0() = 0;
-	virtual void *sub_1005D5B0() = 0;
-	virtual void *sub_1005D5C0() = 0;
-	virtual void *sub_1005D5D0() = 0;
-	virtual void *sub_1005D5E0() = 0;
-	virtual void *sub_1005D600() = 0;
-	virtual void *sub_1005D620() = 0;
-	virtual void *sub_1005D640() = 0;
-	virtual void *sub_1005D710() = 0;
-	virtual void *sub_1005D720() = 0;
-	virtual void *sub_1005D790() = 0;
-	virtual void *sub_1005D7C0() = 0;
-	virtual void *sub_1005D840() = 0;
-	virtual void *sub_1005D880() = 0;
-	virtual void *sub_1005D890() = 0;
-	virtual void *sub_1005D8A0() = 0;
-	virtual void *sub_1005D8D0() = 0;
-	virtual void *sub_1005F160() = 0;
-	virtual void *sub_1005F190() = 0;
-	virtual void *sub_1005DA90() = 0;
-	virtual void *sub_1005DAA0() = 0;
-	virtual void *sub_1005DAB0() = 0;
-	virtual void *sub_1005DAC0() = 0;
-	virtual void *sub_1005DAE0() = 0;
-	virtual void *sub_1005DB40() = 0;
-	virtual void *sub_1005DB70() = 0;
-	virtual void *sub_1005DBA0() = 0;
-	virtual void *sub_1005DBC0() = 0;
-	virtual void *sub_1005DBE0() = 0;
-	virtual void *sub_1005DC10() = 0;
-	virtual void *sub_1005DC40() = 0;
-	virtual void *sub_1005DC60() = 0;
-	virtual void *sub_1005DC80() = 0;
-	virtual void *sub_1005DCA0() = 0;
-	virtual void *sub_1005D7E0() = 0;
-	virtual void *sub_1005DCC0() = 0;
-	virtual void *sub_1005DCE0() = 0;
-	virtual void *sub_1005DD00() = 0;
-	virtual void *sub_1005DD20() = 0;
-	virtual void *sub_1005DD40() = 0;
-	virtual void *sub_100606A0() = 0;
-	virtual void *sub_10060670() = 0;
-	virtual void *sub_1005DAD0() = 0;
-	virtual void *sub_1005D7B0() = 0;
-	virtual void *sub_1005DD50() = 0;
-	virtual void *sub_1005DD60() = 0;
-	virtual void *sub_1005DD70() = 0;
-	virtual void *sub_1005DDE0() = 0;
-	virtual void *sub_1005DDF0() = 0;
-	virtual void *sub_1005DE00() = 0;
-	virtual void *sub_1005DE10() = 0;
-	virtual void *sub_1005DE20() = 0;
-	virtual bool IsPaused() = 0;
-	virtual void *sub_1005DD90() = 0;
-	virtual void *sub_1005DDA0() = 0;
-	virtual void *sub_1005DE30() = 0;
-	virtual void *sub_1005D900() = 0;
-	virtual void *sub_1005D910() = 0;
-	virtual void *sub_1005D9B0() = 0;
-	virtual void *sub_1005DE40() = 0;
-	virtual void *sub_1005F1C0() = 0;
-	virtual void *sub_1005DE80() = 0;
-	virtual void *sub_1005DE90() = 0;
-	virtual void *sub_1005DEB0() = 0;
-	virtual void *sub_1005CB30() = 0;
-	virtual void *sub_1005CB40() = 0;
-	virtual void *sub_1005DF00() = 0;
-	virtual void *sub_1005DF20() = 0;
-	virtual void *sub_1005CF70() = 0;
-	virtual void *sub_1005D000() = 0;
-	virtual void *sub_1005DED0() = 0;
-	virtual void *sub_1005CBB0() = 0;
-	virtual void* sub_1005CBB0_1() = 0;
-	virtual void* sub_1005CBB0_2() = 0;
-	virtual void *ClientCmd_Unrestricted(const char *szCmdString) = 0;
+	void ClientCmd(const char *szCmdString) { CallVirtual<void>(this, 44, szCmdString); }  // Cbuf_AddText(cmd) + "\n"
+	int GetLocalPlayer() { return CallVirtual<int>(this, 47); }                            // GetLocalClient().m_nPlayerSlot + 1
+	void GetViewAngles(QAngle &angle) { CallVirtual<void>(this, 53, &angle); }
+	void SetViewAngles(QAngle &angle) { CallVirtual<void>(this, 54, &angle); }
+	bool IsInGame() { return CallVirtual<bool>(this, 61); }                               // signon state == 6
+	bool IsConnected() { return CallVirtual<bool>(this, 63); }                            // signon state >= 2
+	// NOT VERIFIED: candidate [129] takes (const char *, bool). Only used for VR input in game.
+	void ClientCmd_Unrestricted(const char *szCmdString) { CallVirtual<void>(this, 129, szCmdString, false); }
 };
 
 class IModelInfo
@@ -1887,9 +1800,14 @@ enum ButtonCode_t
 typedef ButtonCode_t MouseCode;
 typedef ButtonCode_t KeyCode;
 
+// vgui2 VGUI_InputInternal001. Strata Source: only the CallVirtual wrappers are checked (vtable of
+// CInputWin32 in vgui2.dll); the virtual declarations below are Portal 2's.
 class IInput
 {
 public:
+	void SetCursorPos(int x, int y) { CallVirtual<void>(this, 7, x, y); }
+	void InternalMouseWheeled(int delta) { CallVirtual<void>(this, 73, delta); }  // between InternalCursorMoved [69] and InternalKeyTyped [76]
+
 	virtual ~IInput();
 	virtual void SetMouseFocus(void);;
 	virtual void SetMouseCapture(void);
@@ -1897,7 +1815,7 @@ public:
 	virtual void GetFocus(void);
 	virtual void GetCalculatedFocus(void);
 	virtual void GetMouseOver(void);
-	virtual void SetCursorPos(int, int);
+	virtual void SetCursorPos_P2(int, int);
 	virtual void GetCursorPos(int &, int &);
 	virtual void WasMousePressed(ButtonCode_t);
 	virtual void WasMouseDoublePressed(ButtonCode_t);
@@ -1961,7 +1879,7 @@ public:
 	virtual void InternalMousePressed(ButtonCode_t);
 	virtual void InternalMouseDoublePressed(ButtonCode_t);
 	virtual void InternalMouseReleased(ButtonCode_t);
-	virtual void InternalMouseWheeled(int);
+	virtual void InternalMouseWheeled_P2(int);
 	virtual void InternalKeyCodePressed(KeyCode);
 	virtual void InternalKeyCodeTyped(KeyCode code);
 	virtual void InternalKeyTyped(void);
@@ -1980,9 +1898,13 @@ public:
 	virtual void IsChildOfModalPanel(void);
 };
 
+// VGUI_Surface031. Strata Source: only the CallVirtual wrappers are checked (vtable of
+// CMatSystemSurface in vguimatsurface.dll); the virtual declarations below are Portal 2's.
 class ISurface
 {
 public:
+	bool IsCursorVisible() { return CallVirtual<bool>(this, 59); }  // m_cursorAlwaysVisible || cursor != dc_none
+
 	virtual void sub_10012FD0() = 0;
 	virtual void sub_100130F0() = 0;
 	virtual void sub_1000A8A0() = 0;
@@ -2039,7 +1961,7 @@ public:
 	virtual void sub_10009A00_4() = 0;
 	virtual void sub_10009A00_5() = 0;
 	virtual void sub_10009A00_6() = 0;
-	virtual bool IsCursorVisible() = 0;
+	virtual bool IsCursorVisible_P2() = 0;
 	virtual void nullsub_3() = 0;
 	virtual void sub_10005A00() = 0;
 	virtual void sub_1002E170() = 0;

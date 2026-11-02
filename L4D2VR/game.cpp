@@ -27,6 +27,8 @@ void Game::init()
         Sleep(50);
     while (!(m_BaseVgui2 = (uintptr_t)GetModuleHandle("vgui2.dll")))
         Sleep(50);
+    while (!GetModuleHandle("vguimatsurface.dll"))
+        Sleep(50);
 
     m_ClientEntityList = (IClientEntityList *)GetInterface("client.dll", "VClientEntityList003");
     m_EngineTrace = (IEngineTrace *)GetInterface("engine.dll", "EngineTraceClient004");
@@ -39,11 +41,14 @@ void Game::init()
     m_VguiInput = (IInput *)GetInterface("vgui2.dll", "VGUI_InputInternal001");
     m_VguiSurface = (ISurface *)GetInterface("vguimatsurface.dll", "VGUI_Surface031");
 
+    std::cout << "[Game] interfaces: EngineClient=" << m_EngineClient << " ClientEntityList=" << m_ClientEntityList
+              << " MaterialSystem=" << m_MaterialSystem << " VguiInput=" << m_VguiInput << " VguiSurface=" << m_VguiSurface << "\n";
+
 //    m_Offsets = new Offsets();
 
 //    m_ClientMode = **(IClientMode***)(m_Offsets->g_pClientMode.address);
 
-//    m_VR->init();
+    m_VR->init();
 //    m_Hooks = new Hooks(this);
 
     m_Initialized = true;
@@ -51,10 +56,18 @@ void Game::init()
 
 void *Game::GetInterface(const char *dllname, const char *interfacename)
 {
-    tCreateInterface CreateInterface = (tCreateInterface)GetProcAddress(GetModuleHandle(dllname), "CreateInterface");
+    HMODULE module = GetModuleHandle(dllname);
+    tCreateInterface CreateInterface = module ? (tCreateInterface)GetProcAddress(module, "CreateInterface") : nullptr;
+    if (!CreateInterface)
+    {
+        std::cout << "[Game] " << dllname << ": no CreateInterface\n";
+        return nullptr;
+    }
 
     int returnCode = 0;
     void *createdInterface = CreateInterface(interfacename, &returnCode);
+    if (!createdInterface)
+        std::cout << "[Game] " << dllname << ": " << interfacename << " not found\n";
 
     return createdInterface;
 }
