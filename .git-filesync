@@ -1,0 +1,48 @@
+# git-filesync: files of this repository that are kept in sync with
+# files in other repositories. Maintained by 'git filesync'; [file]
+# commit/blob record the upstream version each file is based on.
+[source "ValveSoftware/openvr"]
+	url = https://github.com/ValveSoftware/openvr
+	branch = master
+[file "thirdparty/openvr/include/openvr.h"]
+	source = ValveSoftware/openvr
+	path = headers/openvr.h
+	commit = ae46a8dd0172580648c8922658a100439115d3eb
+	blob = 336094b0ce63f602505b4a8684622cb1f04498db
+	tag = v2.5.1
+[file "thirdparty/openvr/include/openvr_api.cs"]
+	source = ValveSoftware/openvr
+	path = headers/openvr_api.cs
+	commit = ae46a8dd0172580648c8922658a100439115d3eb
+	blob = 9b459972e5ca53157fccd1997cc7e0b8e2168273
+	tag = v2.5.1
+[file "thirdparty/openvr/include/openvr_api.json"]
+	source = ValveSoftware/openvr
+	path = headers/openvr_api.json
+	commit = ae46a8dd0172580648c8922658a100439115d3eb
+	blob = e2f089f34cee3da13f0d7a61732b723fd4a7c50d
+	tag = v2.5.1
+[file "thirdparty/openvr/include/openvr_capi.h"]
+	source = ValveSoftware/openvr
+	path = headers/openvr_capi.h
+	commit = ae46a8dd0172580648c8922658a100439115d3eb
+	blob = 4a0de42a948ae229ef17cba178ca1c291eff69f5
+	tag = v2.5.1
+[file "thirdparty/openvr/include/openvr_driver.h"]
+	source = ValveSoftware/openvr
+	path = headers/openvr_driver.h
+	commit = ae46a8dd0172580648c8922658a100439115d3eb
+	blob = 257ac6ccb2547745e8f48d8dd6a7f3ee7c0ac92d
+	tag = v2.5.1
+[file "thirdparty/openvr/bin/win32/openvr_api.dll"]
+	source = ValveSoftware/openvr
+	path = bin/win32/openvr_api.dll
+	commit = ae46a8dd0172580648c8922658a100439115d3eb
+	blob = 089a7adc6e894f7c0d24ffbecf89b760389cb862
+	tag = v2.5.1
+[file "thirdparty/openvr/lib/win32/openvr_api.lib"]
+	source = ValveSoftware/openvr
+	path = lib/win32/openvr_api.lib
+	commit = 15f0838a0487feb7da60acd39aab8099b994234c
+	blob = 00f2a00f8dcafab4b6a22197c8e0332496a33918
+	tag = v2.5.1
