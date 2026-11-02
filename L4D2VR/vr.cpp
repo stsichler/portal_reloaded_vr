@@ -788,27 +788,14 @@ void VR::ProcessMenuInput()
     {
         vr::VROverlay()->SetOverlayFlag(currentOverlay, vr::VROverlayFlags_MakeOverlaysInteractiveIfVisible, true);
 
-        int windowWidth, windowHeight;
-        GetWindowSize(windowWidth, windowHeight);
-
-        // Laser position on the overlay (texture pixels, origin bottom left) -> game window client
-        // coordinates (the engine's view of the screen).
+        // Laser position on the overlay (back buffer pixels, origin bottom left) -> mouse message
+        // coordinates. Panorama lays the menu out over the whole back buffer (HMD size), not the
+        // window size the engine uses, and takes the message coordinates as back buffer pixels:
+        // window coordinates landed in the top left corner of the menu (also with a real mouse).
         auto toWindow = [&](const vr::VREvent_Mouse_t &mouse, int &x, int &y)
         {
-            float laserX = mouse.x;
-            float laserY = mouse.y;
-            if (!IsMenuVisible()) // same choice of the shown texture area as in SubmitVRTextures
-            {
-                laserY -= (m_RenderHeight - windowHeight);
-                laserY = windowHeight - laserY;
-            }
-            else // main menu (uses render sized texture)
-            {
-                laserX = (laserX / m_RenderWidth) * windowWidth;
-                laserY = ((-laserY + m_RenderHeight) / m_RenderHeight) * windowHeight;
-            }
-            x = (int)laserX;
-            y = (int)laserY;
+            x = (int)mouse.x;
+            y = (int)(m_RenderHeight - mouse.y);
         };
 
         // The menu is Panorama; it gets the mouse from inputsystem.dll, which subclasses the game
@@ -826,7 +813,6 @@ void VR::ProcessMenuInput()
             {
             case vr::VREvent_MouseMove:
                 toWindow(vrEvent.data.mouse, x, y);
-                m_Game->m_VguiInput->SetCursorPos(x, y);
                 if (window)
                     PostMessage(window, WM_MOUSEMOVE, 0, MAKELPARAM(x, y));
                 break;
@@ -839,7 +825,7 @@ void VR::ProcessMenuInput()
                 if (window)
                     ScreenToClient(window, &cursor);
                 std::cout << "[VR] menu click at overlay " << vrEvent.data.mouse.x << "," << vrEvent.data.mouse.y
-                          << " -> window " << x << "," << y << " (cursor " << cursor.x << "," << cursor.y
+                          << " -> message " << x << "," << y << " (cursor " << cursor.x << "," << cursor.y
                           << ", game window " << (window ? "found" : "NOT found")
                           << (window && GetForegroundWindow() == window ? ", foreground" : ", NOT foreground") << ")\n";
                 if (window)
