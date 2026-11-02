@@ -207,6 +207,7 @@ public:
 	void CopyBackBuffer(struct IDXGISwapChain *swapChain);
 	void GetWindowSize(int &width, int &height);
 	void CreateBlankTexture();
+	bool IsMenuVisible();
 	void init();
 	int SetActionManifest(const char *fileName);
 	void InstallApplicationManifest(const char *fileName);

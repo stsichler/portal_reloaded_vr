@@ -161,6 +161,14 @@ inline R CallVirtual(const void *object, int index, Args... args)
 	return (*reinterpret_cast<Fn const *const *>(object))[index](object, args...);
 }
 
+// VEngineVGui001 of Strata Source (engine.dll, vtable of CEngineVGui): [2] is GetPanel(type), [3]
+// returns staticGameUIPanel && staticGameUIPanel->IsVisible().
+class IEngineVGui
+{
+public:
+	bool IsGameUIVisible() { return CallVirtual<bool>(this, 3); }
+};
+
 // VEngineClient015 of Strata Source (engine.dll, vtable of CEngineClient). The vtable starts with
 // 37 entries of another base class; the known IVEngineClient methods follow, with changes.
 class IEngineClient

@@ -109,6 +109,16 @@ void VR::init()
     std::cout << "[VR] initialized, menu overlay created\n";
 }
 
+// Main menu or pause menu shown. Strata Source runs a background map behind the main menu, so
+// IsInGame() is true there too, and the vgui surface reports no cursor; the engine's GameUI panel
+// is what tells the menu apart.
+bool VR::IsMenuVisible()
+{
+    if (m_Game->m_EngineVGui)
+        return m_Game->m_EngineVGui->IsGameUIVisible();
+    return !m_Game->m_EngineClient->IsInGame();
+}
+
 // Size of the game window's client area (what the engine renders the menu for).
 void VR::GetWindowSize(int &width, int &height)
 {
@@ -434,15 +444,19 @@ void VR::Update()
         m_InitialPosReset = true;
     }
 
+    // Portal 2/Reloaded: IsCursorVisible(); in Strata Source the vgui surface reports no cursor in
+    // the menus (logged for comparison).
     const bool cursorVisible = m_Game->m_VguiSurface->IsCursorVisible();
-    static int lastCursorVisible = -1;
-    if ((int)cursorVisible != lastCursorVisible)
+    const bool menuVisible = IsMenuVisible();
+    static int lastCursorVisible = -1, lastMenuVisible = -1;
+    if ((int)cursorVisible != lastCursorVisible || (int)menuVisible != lastMenuVisible)
     {
-        std::cout << "[VR] cursor visible (menu input): " << cursorVisible << "\n";
+        std::cout << "[VR] menu input: menu visible=" << menuVisible << " (cursor visible=" << cursorVisible << ")\n";
         lastCursorVisible = cursorVisible;
+        lastMenuVisible = menuVisible;
     }
 
-    if (cursorVisible) {
+    if (menuVisible) {
         ProcessMenuInput();
     } else {
         ProcessInput();
@@ -494,9 +508,11 @@ void VR::SubmitVRTextures()
             RepositionOverlays();
 
         vr::VRTextureBounds_t bounds{ 0, 0, 1, 1 };
-        if (m_Game->m_EngineClient->IsInGame())
+        const bool menuVisible = IsMenuVisible();
+        if (!menuVisible)
         {
-            // menu only renders to the window portion of the texture. Until we figure out a proper fix,
+            // The game view only renders to the window portion of the back buffer (Strata Source
+            // draws its menus over the whole back buffer). Until we figure out a proper fix,
             // as a workaround only show that portion of the texture
             int windowWidth, windowHeight;
             GetWindowSize(windowWidth, windowHeight);
@@ -517,11 +533,12 @@ void VR::SubmitVRTextures()
         vr::VRCompositor()->Submit(vr::Eye_Right, &m_VKBlankTexture.m_VRTexture, NULL, vr::Submit_Default);
 
         // Diagnostics: the first overlay frame and every change of the result codes.
-        static int lastOverlayError = -1, lastSubmitError = -1, lastInGame = -1;
+        static int lastOverlayError = -1, lastSubmitError = -1, lastInGame = -1, lastMenu = -1;
         const int inGame = m_Game->m_EngineClient->IsInGame() ? 1 : 0;
-        if (overlayError != lastOverlayError || submitError != lastSubmitError || inGame != lastInGame)
+        if (overlayError != lastOverlayError || submitError != lastSubmitError || inGame != lastInGame || menuVisible != lastMenu)
         {
-            std::cout << "[VR] overlay frame: inGame=" << inGame << " backbuffer " << m_VKBackBuffer.m_Width << "x"
+            lastMenu = menuVisible;
+            std::cout << "[VR] overlay frame: inGame=" << inGame << " menu=" << menuVisible << " backbuffer " << m_VKBackBuffer.m_Width << "x"
                       << m_VKBackBuffer.m_Height << " bounds u<" << bounds.uMax << " v<" << bounds.vMax
                       << " SetOverlayTexture=" << overlayError << " Submit=" << submitError << "\n";
             lastOverlayError = overlayError;
@@ -756,7 +773,7 @@ void VR::ProcessMenuInput()
                 float laserX = vrEvent.data.mouse.x;
                 float laserY = vrEvent.data.mouse.y;
 
-                if (m_Game->m_EngineClient->IsInGame())
+                if (!IsMenuVisible()) // same choice of the shown texture area as in SubmitVRTextures
                 {
                     laserY -= (m_RenderHeight - windowHeight);
                     laserY = windowHeight - laserY;
@@ -772,6 +789,7 @@ void VR::ProcessMenuInput()
             }
 
             case vr::VREvent_MouseButtonDown:
+                std::cout << "[VR] menu click at overlay " << vrEvent.data.mouse.x << "," << vrEvent.data.mouse.y << "\n";
                 // Don't allow holding down the mouse down in the pause menu. The resume button can be clicked before
                 // the MouseButtonUp event is polled, which causes issues with the overlay.
                 if (currentOverlay == m_MainMenuHandle)

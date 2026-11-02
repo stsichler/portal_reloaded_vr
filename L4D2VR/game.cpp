@@ -33,6 +33,7 @@ void Game::init()
     m_ClientEntityList = (IClientEntityList *)GetInterface("client.dll", "VClientEntityList003");
     m_EngineTrace = (IEngineTrace *)GetInterface("engine.dll", "EngineTraceClient004");
     m_EngineClient = (IEngineClient *)GetInterface("engine.dll", "VEngineClient015");
+    m_EngineVGui = (IEngineVGui *)GetInterface("engine.dll", "VEngineVGui001");
     m_MaterialSystem = (IMaterialSystem *)GetInterface("MaterialSystem.dll", "VMaterialSystem080");
     m_ClientViewRender = (IViewRender *)GetInterface("client.dll", "VEngineRenderView014");
     m_EngineViewRender = (IViewRender *)GetInterface("engine.dll", "VEngineRenderView014");
@@ -41,7 +42,7 @@ void Game::init()
     m_VguiInput = (IInput *)GetInterface("vgui2.dll", "VGUI_InputInternal001");
     m_VguiSurface = (ISurface *)GetInterface("vguimatsurface.dll", "VGUI_Surface031");
 
-    std::cout << "[Game] interfaces: EngineClient=" << m_EngineClient << " ClientEntityList=" << m_ClientEntityList
+    std::cout << "[Game] interfaces: EngineClient=" << m_EngineClient << " EngineVGui=" << m_EngineVGui << " ClientEntityList=" << m_ClientEntityList
               << " MaterialSystem=" << m_MaterialSystem << " VguiInput=" << m_VguiInput << " VguiSurface=" << m_VguiSurface << "\n";
 
 //    m_Offsets = new Offsets();
