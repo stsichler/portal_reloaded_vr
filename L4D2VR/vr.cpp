@@ -434,7 +434,15 @@ void VR::Update()
         m_InitialPosReset = true;
     }
 
-    if (m_Game->m_VguiSurface->IsCursorVisible()) {
+    const bool cursorVisible = m_Game->m_VguiSurface->IsCursorVisible();
+    static int lastCursorVisible = -1;
+    if ((int)cursorVisible != lastCursorVisible)
+    {
+        std::cout << "[VR] cursor visible (menu input): " << cursorVisible << "\n";
+        lastCursorVisible = cursorVisible;
+    }
+
+    if (cursorVisible) {
         ProcessMenuInput();
     } else {
         ProcessInput();
@@ -501,14 +509,24 @@ void VR::SubmitVRTextures()
             vr::VROverlay()->SetOverlayTexelAspect(m_MainMenuHandle, 1.0f);
 
         vr::VROverlay()->SetOverlayTextureBounds(m_MainMenuHandle, &bounds);
-        vr::VROverlay()->SetOverlayTexture(m_MainMenuHandle, &m_VKBackBuffer.m_VRTexture);
+        vr::EVROverlayError overlayError = vr::VROverlay()->SetOverlayTexture(m_MainMenuHandle, &m_VKBackBuffer.m_VRTexture);
         vr::VROverlay()->ShowOverlay(m_MainMenuHandle);
         //vr::VROverlay()->HideOverlay(m_HUDHandle);
 
-        //if (!m_Game->m_EngineClient->IsInGame())
+        vr::EVRCompositorError submitError = vr::VRCompositor()->Submit(vr::Eye_Left, &m_VKBlankTexture.m_VRTexture, NULL, vr::Submit_Default);
+        vr::VRCompositor()->Submit(vr::Eye_Right, &m_VKBlankTexture.m_VRTexture, NULL, vr::Submit_Default);
+
+        // Diagnostics: the first overlay frame and every change of the result codes.
+        static int lastOverlayError = -1, lastSubmitError = -1, lastInGame = -1;
+        const int inGame = m_Game->m_EngineClient->IsInGame() ? 1 : 0;
+        if (overlayError != lastOverlayError || submitError != lastSubmitError || inGame != lastInGame)
         {
-            vr::VRCompositor()->Submit(vr::Eye_Left, &m_VKBlankTexture.m_VRTexture, NULL, vr::Submit_Default);
-            vr::VRCompositor()->Submit(vr::Eye_Right, &m_VKBlankTexture.m_VRTexture, NULL, vr::Submit_Default);
+            std::cout << "[VR] overlay frame: inGame=" << inGame << " backbuffer " << m_VKBackBuffer.m_Width << "x"
+                      << m_VKBackBuffer.m_Height << " bounds u<" << bounds.uMax << " v<" << bounds.vMax
+                      << " SetOverlayTexture=" << overlayError << " Submit=" << submitError << "\n";
+            lastOverlayError = overlayError;
+            lastSubmitError = submitError;
+            lastInGame = inGame;
         }
 
         return;
@@ -641,8 +659,17 @@ void VR::GetPoses()
     if (m_LeftHanded)
         std::swap(leftControllerIndex, rightControllerIndex);
 
-    vr::TrackedDevicePose_t leftControllerPose = m_Poses[leftControllerIndex];
-    vr::TrackedDevicePose_t rightControllerPose = m_Poses[rightControllerIndex];
+    // A hand without an assigned controller (not switched on yet, lost) has the index
+    // k_unTrackedDeviceIndexInvalid; its pose stays invalid and GetPoseData keeps the last one.
+    auto poseOf = [this](vr::TrackedDeviceIndex_t index)
+    {
+        vr::TrackedDevicePose_t pose = {};
+        if (index < vr::k_unMaxTrackedDeviceCount)
+            pose = m_Poses[index];
+        return pose;
+    };
+    vr::TrackedDevicePose_t leftControllerPose = poseOf(leftControllerIndex);
+    vr::TrackedDevicePose_t rightControllerPose = poseOf(rightControllerIndex);
 
     GetPoseData(hmdPose, m_HmdPose);
     GetPoseData(leftControllerPose, m_LeftControllerPose);
@@ -701,6 +728,13 @@ void VR::ProcessMenuInput()
     // Check if left or right hand controller is pointing at the overlay
     const bool isHoveringOverlay = CheckOverlayIntersectionForController(currentOverlay, vr::TrackedControllerRole_LeftHand) ||
                                    CheckOverlayIntersectionForController(currentOverlay, vr::TrackedControllerRole_RightHand);
+
+    static int lastHovering = -1;
+    if ((int)isHoveringOverlay != lastHovering)
+    {
+        std::cout << "[VR] controller pointing at the menu overlay: " << isHoveringOverlay << "\n";
+        lastHovering = isHoveringOverlay;
+    }
 
     // Overlays can't process action inputs if the laser is active, so
     // only activate laser if a controller is pointing at the overlay
