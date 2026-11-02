@@ -1,13 +1,14 @@
 #pragma once
 #include "sigscanner.h"
 #include "game.h"
+#include <iostream>
 
 
 struct Offset
 {
     std::string moduleName;
     int offset;
-    int address;
+    uintptr_t address = 0;
     std::string signature;
     int sigOffset;
 
@@ -19,14 +20,37 @@ struct Offset
         this->sigOffset = sigOffset;
 
         int newOffset = SigScanner::VerifyOffset(moduleName, currentOffset, signature, sigOffset);
+
+#ifdef L4D2VR_DIAGNOSTICS
+        // Diagnostics: was the hard-coded offset still valid, and is the signature unique?
+        std::cout << "[Offset] " << moduleName << " 0x" << std::hex << currentOffset << ": ";
+        if (newOffset == 0)
+            std::cout << "offset verified";
+        else if (newOffset > 0)
+            std::cout << "NOT verified, scan found 0x" << newOffset;
+        else if (newOffset == -2)
+            std::cout << "NOT verified, signature NOT UNIQUE";
+        else
+            std::cout << "NOT FOUND";
+        std::cout << std::dec << ", " << SigScanner::CountMatches(moduleName, signature) << " match(es)"
+            << " [" << signature.substr(0, 40) << (signature.size() > 40 ? "..." : "") << "]\n";
+#endif
+
         if (newOffset > 0)
         {
             this->offset = newOffset;
         }
-            
+
         if (newOffset == -1)
         {
             Game::errorMsg(("Signature not found: " + signature).c_str());
+            return;
+        }
+
+        // Taking an arbitrary one of several matches would hook the wrong code.
+        if (newOffset == -2)
+        {
+            Game::errorMsg(("Signature not unique: " + signature).c_str());
             return;
         }
 
