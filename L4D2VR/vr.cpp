@@ -305,16 +305,53 @@ void VR::initD3D11Callbacks()
 
     D3D11Hooks::SetViewports_Callback = [this](UINT count, D3D11_VIEWPORT *viewports)
         {
-            // TODO: Overriding the viewport in-game will mess up the shadows, so only do it in the menu for now.
-            if (m_IsInitialized && !m_Game->m_EngineClient->IsInGame())
+            // While a menu is shown, the whole back buffer goes to the overlay. Strata Source draws
+            // the menu over the whole back buffer, but the scene behind it (background map) with
+            // a viewport of the window size: stretch that one too. Only viewports of the window
+            // size at 0,0 into the back buffer; render targets (shadow maps etc.) stay as they are
+            // (the D3D9 version stretched every viewport, which messed up the shadows).
+            if (!m_IsInitialized || !IsMenuVisible())
+                return;
+
+            D3D11_VIEWPORT &vp = viewports[0];
+            if (vp.TopLeftX != 0 || vp.TopLeftY != 0 || (int)vp.Width != m_WindowWidth || (int)vp.Height != m_WindowHeight)
+                return;
+
+            ID3D11RenderTargetView *rtv = nullptr;
+            D3D11Hooks::g_Context->OMGetRenderTargets(1, &rtv, nullptr);
+            if (!rtv)
+                return;
+            ID3D11Resource *target = nullptr;
+            rtv->GetResource(&target);
+            rtv->Release();
+            ID3D11Texture2D *backBuffer = nullptr;
+            D3D11Hooks::g_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer);
+            const bool intoBackBuffer = target && target == backBuffer;
+            if (target)
+                target->Release();
+            if (backBuffer)
+                backBuffer->Release();
+            if (!intoBackBuffer)
+                return;
+
+            static bool logged = false;
+            if (!logged)
             {
-                viewports[0].Width = (float)m_RenderWidth;
-                viewports[0].Height = (float)m_RenderHeight;
+                std::cout << "[VR] menu: stretching the scene viewport " << m_WindowWidth << "x" << m_WindowHeight
+                          << " to the back buffer " << m_RenderWidth << "x" << m_RenderHeight << "\n";
+                logged = true;
             }
+            vp.Width = (float)m_RenderWidth;
+            vp.Height = (float)m_RenderHeight;
         };
 
     D3D11Hooks::Present_Pre_Callback = [this](IDXGISwapChain *swapChain)
         {
+            int windowWidth, windowHeight;
+            GetWindowSize(windowWidth, windowHeight);
+            m_WindowWidth = windowWidth; // for the viewport callback, which runs many times per frame
+            m_WindowHeight = windowHeight;
+
             if (m_IsInitialized)
                 CopyBackBuffer(swapChain);
         };
@@ -459,6 +496,8 @@ void VR::Update()
     if (menuVisible) {
         ProcessMenuInput();
     } else {
+        // ProcessMenuInput may have left the overlay interactive (laser); not outside the menus.
+        vr::VROverlay()->SetOverlayFlag(m_MainMenuHandle, vr::VROverlayFlags_MakeOverlaysInteractiveIfVisible, false);
         ProcessInput();
     }
 }
@@ -509,20 +548,25 @@ void VR::SubmitVRTextures()
 
         vr::VRTextureBounds_t bounds{ 0, 0, 1, 1 };
         const bool menuVisible = IsMenuVisible();
+        int windowWidth, windowHeight;
+        GetWindowSize(windowWidth, windowHeight);
         if (!menuVisible)
         {
             // The game view only renders to the window portion of the back buffer (Strata Source
             // draws its menus over the whole back buffer). Until we figure out a proper fix,
-            // as a workaround only show that portion of the texture
-            int windowWidth, windowHeight;
-            GetWindowSize(windowWidth, windowHeight);
-
+            // as a workaround only show that portion of the texture. Its texels are square.
             bounds.uMax = (float)windowWidth / m_RenderWidth;
             bounds.vMax = (float)windowHeight / m_RenderHeight;
-            vr::VROverlay()->SetOverlayTexelAspect(m_MainMenuHandle, bounds.vMax / bounds.uMax);
+            vr::VROverlay()->SetOverlayTexelAspect(m_MainMenuHandle, 1.0f);
         }
         else
-            vr::VROverlay()->SetOverlayTexelAspect(m_MainMenuHandle, 1.0f);
+        {
+            // The menu is laid out for the window but stretched over the whole back buffer:
+            // texels wider than tall bring it back to the window's aspect ratio.
+            const float windowAspect = (float)windowWidth / windowHeight;
+            const float backBufferAspect = (float)m_VKBackBuffer.m_Width / m_VKBackBuffer.m_Height;
+            vr::VROverlay()->SetOverlayTexelAspect(m_MainMenuHandle, windowAspect / backBufferAspect);
+        }
 
         vr::VROverlay()->SetOverlayTextureBounds(m_MainMenuHandle, &bounds);
         vr::EVROverlayError overlayError = vr::VROverlay()->SetOverlayTexture(m_MainMenuHandle, &m_VKBackBuffer.m_VRTexture);
@@ -600,47 +644,30 @@ void VR::RepositionOverlays()
     Vector hmdPosition = { hmdMat.m[0][3], hmdMat.m[1][3], hmdMat.m[2][3] };
     Vector hmdForward = { -hmdMat.m[0][2], 0, -hmdMat.m[2][2] };
 
-    int windowWidth, windowHeight;
-    GetWindowSize(windowWidth, windowHeight);
-
-    vr::HmdMatrix34_t menuTransform = 
-    {
-        1.0f, 0.0f, 0.0f, 0.0f,
-        0.0f, 1.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f, 1.0f
-    };
-
     vr::ETrackingUniverseOrigin trackingOrigin = vr::VRCompositor()->GetTrackingSpace();
-
-    // Reposition main menu overlay
-    float renderWidth = m_VKBackBuffer.m_Width;
-    float renderHeight = m_VKBackBuffer.m_Height;
-
-    float widthRatio = windowWidth / renderWidth;
-    float heightRatio = windowHeight / renderHeight;
-    menuTransform.m[0][0] *= widthRatio;
-    menuTransform.m[1][1] *= heightRatio;
 
     hmdForward[1] = 0;
     VectorNormalize(hmdForward);
 
-    Vector menuDistance = hmdForward * 3;
-    Vector menuNewPos = menuDistance + hmdPosition;
+    // Main menu overlay: 3 m in front of the HMD, turned towards it (yaw only). A rigid
+    // transform: the overlay's size comes from SetOverlayWidthInMeters, its aspect ratio from
+    // the texel aspect set in SubmitVRTextures. (The D3D9 version scaled this matrix instead,
+    // so the visible area and ComputeOverlayIntersection didn't match: no laser in the menu.)
+    Vector menuNewPos = hmdForward * 3 + hmdPosition;
+    float hmdYaw = atan2f(hmdMat.m[0][2], hmdMat.m[2][2]);
 
-    menuTransform.m[0][3] = menuNewPos.x;
-    menuTransform.m[1][3] = menuNewPos.y - 0.25;
-    menuTransform.m[2][3] = menuNewPos.z;
+    vr::HmdMatrix34_t menuTransform =
+    {
+        cosf(hmdYaw),  0.0f, sinf(hmdYaw), menuNewPos.x,
+        0.0f,          1.0f, 0.0f,         menuNewPos.y - 0.25f,
+        -sinf(hmdYaw), 0.0f, cosf(hmdYaw), menuNewPos.z
+    };
 
-    float xScale = menuTransform.m[0][0];
-    float hmdRotationDegrees = atan2f(hmdMat.m[0][2], hmdMat.m[2][2]);
-
-    menuTransform.m[0][0] *= cos(hmdRotationDegrees);
-    menuTransform.m[0][2] = sin(hmdRotationDegrees);
-    menuTransform.m[2][0] = -sin(hmdRotationDegrees) * xScale;
-    menuTransform.m[2][2] *= cos(hmdRotationDegrees);
-
+    int windowWidth, windowHeight;
+    GetWindowSize(windowWidth, windowHeight);
+    const float menuHeight = 1.5f; // meters
     vr::VROverlay()->SetOverlayTransformAbsolute(m_MainMenuHandle, trackingOrigin, &menuTransform);
-    vr::VROverlay()->SetOverlayWidthInMeters(m_MainMenuHandle, 1.5 * (1.0 / heightRatio));
+    vr::VROverlay()->SetOverlayWidthInMeters(m_MainMenuHandle, menuHeight * windowWidth / windowHeight);
 
     // Reposition HUD overlay
     /*vr::HmdMatrix34_t hudTransform =

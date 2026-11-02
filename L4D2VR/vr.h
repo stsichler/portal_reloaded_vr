@@ -45,6 +45,8 @@ public:
 	float m_HorizontalOffsetRight;
 	float m_VerticalOffsetRight;
 
+	int m_WindowWidth = 0; // client area of the game window, updated every frame
+	int m_WindowHeight = 0;
 	uint32_t m_RenderWidth;
 	uint32_t m_RenderHeight;
 	uint32_t m_AntiAliasing;
