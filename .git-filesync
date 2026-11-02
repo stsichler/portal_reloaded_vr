@@ -46,3 +46,15 @@
 	commit = 15f0838a0487feb7da60acd39aab8099b994234c
 	blob = 00f2a00f8dcafab4b6a22197c8e0332496a33918
 	tag = v2.5.1
+[file "thirdparty/openvr/bin/win64/openvr_api.dll"]
+	source = ValveSoftware/openvr
+	path = bin/win64/openvr_api.dll
+	commit = ae46a8dd0172580648c8922658a100439115d3eb
+	blob = 5c70fd194ab4560f0b0a60b5318f08bf474fcfcc
+	tag = v2.5.1
+[file "thirdparty/openvr/lib/win64/openvr_api.lib"]
+	source = ValveSoftware/openvr
+	path = lib/win64/openvr_api.lib
+	commit = 15f0838a0487feb7da60acd39aab8099b994234c
+	blob = 76523aceca8101109014dbb8d17e1ac9b09042e2
+	tag = v2.5.1
