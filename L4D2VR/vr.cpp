@@ -126,7 +126,7 @@ static void LoadModOpenVR()
     char currentDir[MAX_STR_LEN];
     GetCurrentDirectory(MAX_STR_LEN, currentDir);
     char path[MAX_STR_LEN];
-    sprintf_s(path, MAX_STR_LEN, "%s\VR\openvr_api.dll", currentDir);
+    sprintf_s(path, MAX_STR_LEN, "%s\\VR\\openvr_api.dll", currentDir);
     HMODULE module = LoadLibraryA(path);
     std::cout << "[OpenVR] " << path << (module ? " loaded" : " NOT found, using the game's openvr_api.dll") << "\n";
 }
