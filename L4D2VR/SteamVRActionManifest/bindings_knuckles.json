@@ -37,6 +37,16 @@
          "sources" : []
       },
       "/actions/main" : {
+         "poses" : [
+            {
+               "output" : "/actions/main/in/PointerLeft",
+               "path" : "/user/hand/left/pose/tip"
+            },
+            {
+               "output" : "/actions/main/in/PointerRight",
+               "path" : "/user/hand/right/pose/tip"
+            }
+         ],
          "sources" : [
             {
                "inputs" : {

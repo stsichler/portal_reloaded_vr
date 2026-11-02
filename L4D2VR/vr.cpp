@@ -400,6 +400,8 @@ int VR::SetActionManifest(const char *fileName)
     m_Input->GetActionHandle("/actions/main/in/ShowHUD", &m_ShowHUD);
     m_Input->GetActionHandle("/actions/main/in/Pause", &m_Pause);
     m_Input->GetActionHandle("/actions/main/in/ThirdAttack", &m_ThirdAttack);
+    m_Input->GetActionHandle("/actions/main/in/PointerLeft", &m_ActionPointerLeft);
+    m_Input->GetActionHandle("/actions/main/in/PointerRight", &m_ActionPointerRight);
 
     m_Input->GetActionSetHandle("/actions/main", &m_ActionSet);
     m_ActiveActionSet = {};
@@ -1123,7 +1125,15 @@ vr::HmdMatrix34_t VR::GetControllerTipMatrix(vr::ETrackedControllerRole controll
         vr::RenderModel_ControllerMode_State_t controllerState = {0};
         vr::RenderModel_ComponentState_t componentState = {0};
 
-        if (vr::VRRenderModels()->GetComponentStateForDevicePath(buffer, vr::k_pch_Controller_Component_Tip, inputValue, &controllerState, &componentState))
+        const bool found = vr::VRRenderModels()->GetComponentStateForDevicePath(buffer, vr::k_pch_Controller_Component_Tip, inputValue, &controllerState, &componentState);
+        static bool logged[2] = { false, false };
+        const int hand = controllerRole == vr::TrackedControllerRole_LeftHand ? 0 : 1;
+        if (!logged[hand])
+        {
+            std::cout << "[VR] render model '" << buffer << "': tip component " << (found ? "found" : "NOT found") << "\n";
+            logged[hand] = true;
+        }
+        if (found)
         {
             return componentState.mTrackingToComponentLocal;
         }
@@ -1142,26 +1152,55 @@ vr::HmdMatrix34_t VR::GetControllerTipMatrix(vr::ETrackedControllerRole controll
 
 bool VR::CheckOverlayIntersectionForController(vr::VROverlayHandle_t overlayHandle, vr::ETrackedControllerRole controllerRole)
 {
-    vr::TrackedDeviceIndex_t deviceIndex = m_System->GetTrackedDeviceIndexForControllerRole(controllerRole);
-
-    if (deviceIndex == vr::k_unTrackedDeviceIndexInvalid)
-        return false;
-
-    vr::TrackedDevicePose_t &controllerPose = m_Poses[deviceIndex];
-
-    if (!controllerPose.bPoseIsValid)
-        return false;
-
-    VMatrix controllerVMatrix = VMatrixFromHmdMatrix(controllerPose.mDeviceToAbsoluteTracking);
-    VMatrix tipVMatrix        = VMatrixFromHmdMatrix(GetControllerTipMatrix(controllerRole));
-    tipVMatrix.MatrixMul(controllerVMatrix, controllerVMatrix);
-
     vr::VROverlayIntersectionParams_t  params  = {0};
     vr::VROverlayIntersectionResults_t results = {0};
+    params.eOrigin = vr::VRCompositor()->GetTrackingSpace();
 
-    params.eOrigin    = vr::VRCompositor()->GetTrackingSpace();
-    params.vSource    = { controllerVMatrix.m[3][0],  controllerVMatrix.m[3][1],  controllerVMatrix.m[3][2]};
-    params.vDirection = {-controllerVMatrix.m[2][0], -controllerVMatrix.m[2][1], -controllerVMatrix.m[2][2]};
+    // The ray of SteamVR's laser: the tip pose (/user/hand/*/pose/tip) via the pointer actions.
+    // Fallback: controller pose times the "tip" component of its render model. With controllers
+    // whose render model has no tip component (e.g. Quest via Virtual Desktop) that is the grip
+    // pose, which points well below the laser: the overlay became interactive when pointing
+    // above it, and the laser missed the menu.
+    const bool left = controllerRole == vr::TrackedControllerRole_LeftHand;
+    vr::InputPoseActionData_t pointer = {};
+    const bool havePointer =
+        m_Input->GetPoseActionDataForNextFrame(left ? m_ActionPointerLeft : m_ActionPointerRight, params.eOrigin,
+            &pointer, sizeof(pointer), vr::k_ulInvalidInputValueHandle) == vr::VRInputError_None &&
+        pointer.bActive && pointer.pose.bPoseIsValid;
+
+    static int lastSource[2] = { -1, -1 };
+    if (lastSource[left] != (int)havePointer)
+    {
+        std::cout << "[VR] menu laser " << (left ? "left" : "right") << ": "
+                  << (havePointer ? "tip pose action" : "fallback (render model tip)") << "\n";
+        lastSource[left] = havePointer;
+    }
+
+    if (havePointer)
+    {
+        const vr::HmdMatrix34_t &m = pointer.pose.mDeviceToAbsoluteTracking;
+        params.vSource    = { m.m[0][3], m.m[1][3], m.m[2][3] };
+        params.vDirection = { -m.m[0][2], -m.m[1][2], -m.m[2][2] };
+    }
+    else
+    {
+        vr::TrackedDeviceIndex_t deviceIndex = m_System->GetTrackedDeviceIndexForControllerRole(controllerRole);
+
+        if (deviceIndex >= vr::k_unMaxTrackedDeviceCount)
+            return false;
+
+        vr::TrackedDevicePose_t &controllerPose = m_Poses[deviceIndex];
+
+        if (!controllerPose.bPoseIsValid)
+            return false;
+
+        VMatrix controllerVMatrix = VMatrixFromHmdMatrix(controllerPose.mDeviceToAbsoluteTracking);
+        VMatrix tipVMatrix        = VMatrixFromHmdMatrix(GetControllerTipMatrix(controllerRole));
+        tipVMatrix.MatrixMul(controllerVMatrix, controllerVMatrix);
+
+        params.vSource    = { controllerVMatrix.m[3][0],  controllerVMatrix.m[3][1],  controllerVMatrix.m[3][2]};
+        params.vDirection = {-controllerVMatrix.m[2][0], -controllerVMatrix.m[2][1], -controllerVMatrix.m[2][2]};
+    }
 
     return m_Overlay->ComputeOverlayIntersection(overlayHandle, &params, &results);
 }

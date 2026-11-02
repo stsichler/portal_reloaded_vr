@@ -42,6 +42,14 @@
 			"type" : "skeleton"
 		},
 		{
+			"name": "/actions/main/in/PointerLeft",
+			"type": "pose"
+		},
+		{
+			"name": "/actions/main/in/PointerRight",
+			"type": "pose"
+		},
+		{
 			"name": "/actions/main/in/PrimaryAttack",
 			"type": "boolean"
 		},
@@ -189,7 +197,9 @@
 			"/actions/main/in/Spray" : "Spray",
 			"/actions/main/in/Scoreboard" : "Show Scoreboard",
 			"/actions/main/in/ShowHUD" : "Show HUD",
-			"/actions/main/in/Pause" : "Pause"
+			"/actions/main/in/Pause" : "Pause",
+			"/actions/main/in/PointerLeft" : "Menu Laser Left",
+			"/actions/main/in/PointerRight" : "Menu Laser Right"
 		}
 	]
 }

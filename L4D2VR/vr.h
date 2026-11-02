@@ -174,6 +174,8 @@ public:
 	vr::VRActionHandle_t m_ShowHUD;
 	vr::VRActionHandle_t m_Pause;
 	vr::VRActionHandle_t m_ThirdAttack;
+	vr::VRActionHandle_t m_ActionPointerLeft;  // pose at /user/hand/left/pose/tip (menu laser)
+	vr::VRActionHandle_t m_ActionPointerRight;
 
 	TrackedDevicePoseData m_HmdPose;
 	TrackedDevicePoseData m_LeftControllerPose;
