@@ -58,3 +58,76 @@
 	commit = 15f0838a0487feb7da60acd39aab8099b994234c
 	blob = 76523aceca8101109014dbb8d17e1ac9b09042e2
 	tag = v2.5.1
+[source "TsudaKageyu/minhook"]
+	url = https://github.com/TsudaKageyu/minhook.git
+	branch = master
+[file "thirdparty/minhook/LICENSE.txt"]
+	source = TsudaKageyu/minhook
+	path = LICENSE.txt
+	commit = 7d80cff1de5c87b404e7ac451757bfa77e5e82da
+	blob = 74dea27229c05b53b095aa22b9ee7ee9f549e414
+[file "thirdparty/minhook/include/MinHook.h"]
+	source = TsudaKageyu/minhook
+	path = include/MinHook.h
+	commit = 256a4a83df6344ccbddb6c0e15ad89260a3cd279
+	blob = ae393508b8852dad600c22ebdfddd54ec133ace4
+[file "thirdparty/minhook/src/buffer.c"]
+	source = TsudaKageyu/minhook
+	path = src/buffer.c
+	commit = 7586d1a64ad87864e336560327f6b4bd720a6917
+	blob = d2850bfc482c326399784ea24d27957514326f49
+[file "thirdparty/minhook/src/buffer.h"]
+	source = TsudaKageyu/minhook
+	path = src/buffer.h
+	commit = 7d80cff1de5c87b404e7ac451757bfa77e5e82da
+	blob = 204d551bffb7f11760bc1e474aa835e55f4cbb00
+[file "thirdparty/minhook/src/hde/hde32.c"]
+	source = TsudaKageyu/minhook
+	path = src/hde/hde32.c
+	commit = 8af6b4acae5a9388fd742b56fa79ece89d96f823
+	blob = cc5e5e55ce31accd6172aca91bcb543a09f92882
+[file "thirdparty/minhook/src/hde/hde32.h"]
+	source = TsudaKageyu/minhook
+	path = src/hde/hde32.h
+	commit = 28338f33fac2a5a3162a461dd032b92189b1525f
+	blob = 1112450d87ae6772ad805f4f7fa07965c5bbbdb0
+[file "thirdparty/minhook/src/hde/hde64.c"]
+	source = TsudaKageyu/minhook
+	path = src/hde/hde64.c
+	commit = 8af6b4acae5a9388fd742b56fa79ece89d96f823
+	blob = cd7992f2f5ddd9cdd82cd116ae928e80f6399ee9
+[file "thirdparty/minhook/src/hde/hde64.h"]
+	source = TsudaKageyu/minhook
+	path = src/hde/hde64.h
+	commit = 8af6b4acae5a9388fd742b56fa79ece89d96f823
+	blob = e7666853f1bdfc24c04d5eb06054b45a42f6cf54
+[file "thirdparty/minhook/src/hde/pstdint.h"]
+	source = TsudaKageyu/minhook
+	path = src/hde/pstdint.h
+	commit = 7d80cff1de5c87b404e7ac451757bfa77e5e82da
+	blob = 84d82a012311a72f5dfb1fc88554f7820fbdf216
+[file "thirdparty/minhook/src/hde/table32.h"]
+	source = TsudaKageyu/minhook
+	path = src/hde/table32.h
+	commit = 8af6b4acae5a9388fd742b56fa79ece89d96f823
+	blob = 7c0951dc0b8fb99b862bfb0cc1195636a26011d9
+[file "thirdparty/minhook/src/hde/table64.h"]
+	source = TsudaKageyu/minhook
+	path = src/hde/table64.h
+	commit = 8af6b4acae5a9388fd742b56fa79ece89d96f823
+	blob = 4ce61a3164f74bc9a257fdc67b4c4cc709fa3cde
+[file "thirdparty/minhook/src/hook.c"]
+	source = TsudaKageyu/minhook
+	path = src/hook.c
+	commit = 1e9ad1eb42db11bfcb65461f687c656612d1b555
+	blob = 06f56961f75c2680e779de4d2ff0a45a21cd9c24
+[file "thirdparty/minhook/src/trampoline.c"]
+	source = TsudaKageyu/minhook
+	path = src/trampoline.c
+	commit = 07c7c416fa45aa370bafe9b3037ba0e274eb00dd
+	blob = cf8ce058b709547dadce7aa2f38ca9ba03595bfb
+[file "thirdparty/minhook/src/trampoline.h"]
+	source = TsudaKageyu/minhook
+	path = src/trampoline.h
+	commit = 1e9ad1eb42db11bfcb65461f687c656612d1b555
+	blob = f7efb36081e52aaed2040930e105bfbf1996c82a

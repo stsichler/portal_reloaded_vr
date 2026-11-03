@@ -199,10 +199,21 @@
     <None Include="d3d11.def" />
     <Text Include="config.txt" />
   </ItemGroup>
+  <!-- MinHook (thirdparty\minhook, synced with git-filesync), built as part of the mod -->
   <ItemGroup>
-    <ProjectReference Include="..\thirdparty\minhook\build\VC17\libMinHook.vcxproj">
-      <Project>{f142a341-5ee0-442d-a15f-98ae9b48dbae}</Project>
-    </ProjectReference>
+    <ClCompile Include="..\thirdparty\minhook\src\buffer.c" />
+    <ClCompile Include="..\thirdparty\minhook\src\hook.c" />
+    <ClCompile Include="..\thirdparty\minhook\src\trampoline.c" />
+    <ClCompile Include="..\thirdparty\minhook\src\hde\hde32.c" />
+    <ClCompile Include="..\thirdparty\minhook\src\hde\hde64.c" />
+    <ClInclude Include="..\thirdparty\minhook\include\MinHook.h" />
+    <ClInclude Include="..\thirdparty\minhook\src\buffer.h" />
+    <ClInclude Include="..\thirdparty\minhook\src\trampoline.h" />
+    <ClInclude Include="..\thirdparty\minhook\src\hde\hde32.h" />
+    <ClInclude Include="..\thirdparty\minhook\src\hde\hde64.h" />
+    <ClInclude Include="..\thirdparty\minhook\src\hde\pstdint.h" />
+    <ClInclude Include="..\thirdparty\minhook\src\hde\table32.h" />
+    <ClInclude Include="..\thirdparty\minhook\src\hde\table64.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

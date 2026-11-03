@@ -22,8 +22,7 @@ This Repo is intended as a **starting point** for implementation of a VR Mod for
 
 ## Build instructions
 1. Clone Repository
-2. Run ```git submodule update --init --recursive```
-3. Open l4d2vr.sln, set to x64 (Debug, Release or RelWithDebInfo), build
+2. Open l4d2vr.sln, set to x64 (Debug, Release or RelWithDebInfo), build
 
 Note: After building, it will attempt to copy the new ```d3d11.dll``` to your ```Portal Revolution/bin/win64``` directory.
 
