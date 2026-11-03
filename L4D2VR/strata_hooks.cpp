@@ -53,9 +53,18 @@ namespace
         return sections;
     }
 
-    // The player aims with the right controller (view angles of the command: shooting, use) and
-    // walks relative to the head: keyboard and left stick, turned from the head's yaw into the
-    // aim's. The engine's view angles stay with the head (set in hkRenderView).
+    // Movement (forward, side) given relative to fromYaw, expressed relative to toYaw. Source:
+    // forward = (cos yaw, sin yaw), right = (sin yaw, -cos yaw).
+    void TurnMove(float forward, float side, float fromYaw, float toYaw, float &outForward, float &outSide)
+    {
+        const float d = (fromYaw - toYaw) * 3.14159265f / 180.0f;
+        outForward += forward * cosf(d) + side * sinf(d);
+        outSide += -forward * sinf(d) + side * cosf(d);
+    }
+
+    // The player aims with the right controller (view angles of the command: shooting, use). The
+    // left stick walks where the left controller points (Stefan, 2026-11-03), the keyboard
+    // relative to the head. The engine's view angles stay with the head (set in hkRenderView).
     bool hkCreateMove(void *thisptr, float flInputSampleTime, CUserCmd *cmd)
     {
         const bool result = oCreateMove(thisptr, flInputSampleTime, cmd);
@@ -64,24 +73,18 @@ namespace
         if (!cmd || !cmd->command_number || !vr->m_IsInitialized || !vr->m_IsVREnabled || vr->IsMenuVisible())
             return result;
 
-        // Keyboard movement is relative to the engine's view angles, i.e. the head.
-        float forward = cmd->forwardmove;
-        float side = cmd->sidemove;
-        vr::InputAnalogActionData_t walk;
-        if (vr->GetAnalogActionData(vr->m_ActionWalk, walk) && walk.bActive)
-        {
-            forward += walk.y * MAX_LINEAR_SPEED;
-            side += walk.x * MAX_LINEAR_SPEED;
-        }
-
         QAngle aim = vr->m_RightControllerAngAbs;
         aim.x = std::clamp(aim.x, -89.0f, 89.0f);
         aim.z = 0;
 
-        // Source: forward = (cos yaw, sin yaw), right = (sin yaw, -cos yaw).
-        const float d = (vr->m_HmdAngAbs.y - aim.y) * 3.14159265f / 180.0f;
-        cmd->forwardmove = forward * cosf(d) + side * sinf(d);
-        cmd->sidemove = -forward * sinf(d) + side * cosf(d);
+        float forward = 0, side = 0;
+        // Keyboard movement is relative to the engine's view angles, i.e. the head.
+        TurnMove(cmd->forwardmove, cmd->sidemove, vr->m_HmdAngAbs.y, aim.y, forward, side);
+        vr::InputAnalogActionData_t walk;
+        if (vr->GetAnalogActionData(vr->m_ActionWalk, walk) && walk.bActive)
+            TurnMove(walk.y * MAX_LINEAR_SPEED, walk.x * MAX_LINEAR_SPEED, vr->m_LeftControllerAngAbs.y, aim.y, forward, side);
+        cmd->forwardmove = forward;
+        cmd->sidemove = side;
         cmd->upmove = 0;
 
         cmd->buttons &= ~(IN_FORWARD | IN_BACK | IN_MOVELEFT | IN_MOVERIGHT);

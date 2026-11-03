@@ -503,6 +503,9 @@ void VR::CreateVRTextures()
     IMaterialSystem *materialSystem = m_Game->m_MaterialSystem;
     // Same format as the back buffer (B8G8R8A8_UNORM).
     const ImageFormat format = IMAGE_FORMAT_BGRA8888;
+    // The eyes use the game's own depth buffer (back buffer size = eye size). With a separate
+    // depth buffer portals stayed black and smoke/glass came and went with the view direction;
+    // suspected: no stencil, or effects reading the game's depth buffer (soft particles).
 
     // Render targets may only be allocated before the game has started; the flag is set again
     // before the textures are created, as in the Portal 2 version.
@@ -514,11 +517,11 @@ void VR::CreateVRTextures()
 
     m_CreatingTextureID = Texture_LeftEye;
     m_LeftEyeTexture = StrataMaterialSystem::CreateNamedRenderTargetTextureEx(materialSystem, "vrLeftEye", m_RenderWidth, m_RenderHeight,
-        RT_SIZE_NO_CHANGE, format, MATERIAL_RT_DEPTH_SEPARATE, TEXTUREFLAGS_NOMIP, 0);
+        RT_SIZE_NO_CHANGE, format, MATERIAL_RT_DEPTH_SHARED, TEXTUREFLAGS_NOMIP, 0);
 
     m_CreatingTextureID = Texture_RightEye;
     m_RightEyeTexture = StrataMaterialSystem::CreateNamedRenderTargetTextureEx(materialSystem, "vrRightEye", m_RenderWidth, m_RenderHeight,
-        RT_SIZE_NO_CHANGE, format, MATERIAL_RT_DEPTH_SEPARATE, TEXTUREFLAGS_NOMIP, 0);
+        RT_SIZE_NO_CHANGE, format, MATERIAL_RT_DEPTH_SHARED, TEXTUREFLAGS_NOMIP, 0);
 
     m_CreatingTextureID = Texture_None;
 
@@ -1454,6 +1457,11 @@ void VR::UpdateHandTracking()
     rightControllerAngLocal.x += m_RotationOffset.x;
     rightControllerAngLocal.y += m_RotationOffset.y;
     rightControllerAngLocal.z += m_RotationOffset.z;
+
+    // Same for the left hand (it sets the walking direction).
+    leftControllerAngLocal.x += m_RotationOffset.x;
+    leftControllerAngLocal.y += m_RotationOffset.y;
+    leftControllerAngLocal.z += m_RotationOffset.z;
 
     // Wrap angle from -180 to 180
     //rightControllerAngLocal.Normalize();
