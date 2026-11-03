@@ -131,3 +131,9 @@
 	path = src/trampoline.h
 	commit = 1e9ad1eb42db11bfcb65461f687c656612d1b555
 	blob = f7efb36081e52aaed2040930e105bfbf1996c82a
+[file "thirdparty/openvr/LICENSE"]
+	source = ValveSoftware/openvr
+	path = LICENSE
+	commit = f87667074cabc24f643170069d176dadb390dbb7
+	blob = ee83337d7fcb726d14cc10f7dd2fda6799d8a135
+	tag = v2.5.1
