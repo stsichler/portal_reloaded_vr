@@ -1,6 +1,9 @@
 # git-filesync: files of this repository that are kept in sync with
 # files in other repositories. Maintained by 'git filesync'; [file]
 # commit/blob record the upstream version each file is based on.
+
+# OpenVR (Valve): headers, runtime, import libraries and license,
+# pinned to release v2.5.1
 [source "ValveSoftware/openvr"]
 	url = https://github.com/ValveSoftware/openvr
 	branch = master
@@ -58,6 +61,15 @@
 	commit = 15f0838a0487feb7da60acd39aab8099b994234c
 	blob = 76523aceca8101109014dbb8d17e1ac9b09042e2
 	tag = v2.5.1
+[file "thirdparty/openvr/LICENSE"]
+	source = ValveSoftware/openvr
+	path = LICENSE
+	commit = f87667074cabc24f643170069d176dadb390dbb7
+	blob = ee83337d7fcb726d14cc10f7dd2fda6799d8a135
+	tag = v2.5.1
+
+# MinHook: license, header and sources (compiled in L4D2VR/l4d2vr.vcxproj),
+# following master
 [source "TsudaKageyu/minhook"]
 	url = https://github.com/TsudaKageyu/minhook.git
 	branch = master
@@ -131,9 +143,3 @@
 	path = src/trampoline.h
 	commit = 1e9ad1eb42db11bfcb65461f687c656612d1b555
 	blob = f7efb36081e52aaed2040930e105bfbf1996c82a
-[file "thirdparty/openvr/LICENSE"]
-	source = ValveSoftware/openvr
-	path = LICENSE
-	commit = f87667074cabc24f643170069d176dadb390dbb7
-	blob = ee83337d7fcb726d14cc10f7dd2fda6799d8a135
-	tag = v2.5.1
