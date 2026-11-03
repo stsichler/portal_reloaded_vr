@@ -39,3 +39,6 @@ Note: After building, it will attempt to copy the new ```d3d11.dll``` to your ``
 * [VirtualFortress2](https://github.com/PinkMilkProductions/VirtualFortress2)
 * [gmcl_openvr](https://github.com/Planimeter/gmcl_openvr/)
 * [source-sdk-2013](https://github.com/ValveSoftware/source-sdk-2013/)
+
+## Third-party licenses
+* [MinHook](https://github.com/TsudaKageyu/minhook): Copyright (C) 2009-2017 Tsuda Kageyu; Hacker Disassembler Engine: Copyright (c) 2008-2009 Vyacheslav Patkov. BSD 2-Clause License, see [thirdparty/minhook/LICENSE.txt](thirdparty/minhook/LICENSE.txt).
