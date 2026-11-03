@@ -252,6 +252,32 @@ void VR::CopyBackBuffer(IDXGISwapChain *swapChain)
     backBuffer->Release();
 }
 
+// Copies the back buffer, which holds the finished image of an eye, into its D3D11 texture.
+void VR::CopyBackBufferToEye(SharedTextureHolder &eye)
+{
+    ID3D11Texture2D *backBuffer = nullptr;
+    if (!D3D11Hooks::g_SwapChain || FAILED(D3D11Hooks::g_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer)))
+        return;
+
+    D3D11_TEXTURE2D_DESC source, target;
+    backBuffer->GetDesc(&source);
+    eye.m_Texture->GetDesc(&target);
+
+    // CopyResource silently does nothing if the sizes differ.
+    const bool copyable = source.Width == target.Width && source.Height == target.Height && source.SampleDesc.Count == target.SampleDesc.Count;
+    static bool logged = false;
+    if (!logged)
+    {
+        std::cout << "[VR] stereo: back buffer " << source.Width << "x" << source.Height << " format " << source.Format << " samples "
+                  << source.SampleDesc.Count << " -> eye " << target.Width << "x" << target.Height << " format " << target.Format
+                  << " samples " << target.SampleDesc.Count << (copyable ? "" : ": can't copy") << "\n";
+        logged = true;
+    }
+    if (copyable)
+        D3D11Hooks::g_Context->CopyResource(eye.m_Texture, backBuffer);
+    backBuffer->Release();
+}
+
 void VR::initD3D11Callbacks()
 {
     // The game renders at the HMD resolution: the back buffer is shown on the menu overlay, the
@@ -503,9 +529,6 @@ void VR::CreateVRTextures()
     IMaterialSystem *materialSystem = m_Game->m_MaterialSystem;
     // Same format as the back buffer (B8G8R8A8_UNORM).
     const ImageFormat format = IMAGE_FORMAT_BGRA8888;
-    // The eyes use the game's own depth buffer (back buffer size = eye size). With a separate
-    // depth buffer portals stayed black and smoke/glass came and went with the view direction;
-    // suspected: no stencil, or effects reading the game's depth buffer (soft particles).
 
     // Render targets may only be allocated before the game has started; the flag is set again
     // before the textures are created, as in the Portal 2 version.
