@@ -2,6 +2,7 @@
 #include "strata_hooks.h"
 #include <Windows.h>
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
 #include <iostream>
@@ -40,6 +41,22 @@ namespace
     tCalcViewModelLag oCalcViewModelLag = nullptr;
     using tCalcViewModelView = void (*)(void *thisptr, void *owner, const Vector &eyePosition, const QAngle &eyeAngles);
     tCalcViewModelView oCalcViewModelView = nullptr;
+
+    // C_WeaponPortalgun [332] AddViewmodelBob(viewModel, origin, angles): moves and turns the gun
+    // with the walking speed, called by CalcViewModelView.
+    constexpr int kPortalgun_AddViewmodelBob = 332;
+
+    using tAddViewmodelBob = void (*)(void *thisptr, void *viewModel, Vector &origin, QAngle &angles);
+    tAddViewmodelBob oAddViewmodelBob = nullptr;
+
+    // OnRenderStart: after the view is set up, ParticleMgr()->Simulate(frameTime) moves the particles
+    // to their control points, called this far after loading the name for the profiler. They are
+    // drawn from there, so a later change of a control point shows one frame late.
+    constexpr const char *kParticleSimulate_Name = "ParticleMgr()->Simulate";
+    constexpr int kParticleSimulate_CallOffset = 0x21;
+
+    using tParticleSimulate = void (*)(void *thisptr, float frameTime);
+    tParticleSimulate oParticleSimulate = nullptr;
 
     // Reads the muzzle as C_WeaponPortalgun does: player [281] GetViewModel(index), then the
     // IClientRenderable part of the viewmodel, [32] LookupAttachment(name), [34] GetAttachment(number,
@@ -85,11 +102,87 @@ namespace
     using tFormatViewModelAttachment = void (*)(void *player, Vector &origin, bool inverse);
     tFormatViewModelAttachment oFormatViewModelAttachment = nullptr;
 
+    // The game's ping laser, used as the aim laser: CreatePingPointer(player, destination) starts the
+    // effect robot_point_beam at the viewmodel's muzzle; control point 1 is its end, 2 its color. No
+    // vtable entry: found through its warning, see the offsets into the function.
+    constexpr const char *kPingPointer_Warning = "Trying to create a ping laser, but we have no view model!";
+    constexpr int kPingPointer_WarningOffset = 0x39;
+    constexpr uint8_t kPingPointer_Start[] = { 0x40, 0x56, 0x41, 0x56, 0x41, 0x57, 0x48, 0x83, 0xEC, 0x50 };
+    constexpr int kPingPointer_DestroyCallOffset = 0x10;
+    constexpr int kPingPointer_EffectLeaOffset = 0x15; // lea rsi, [r14 + effect]
+    constexpr uint8_t kPingPointer_EffectLea[] = { 0x49, 0x8D, 0xB6 };
+    constexpr int kPingPointer_SetDrawOnlyCallOffset = 0x279;
+    constexpr int kPingPointer_SetControlPointCallOffset = 0x289;
+
+    // The server precaches the effect only in coop: PrecacheParticleSystem(name), called right after
+    // loading the name, adds it to a string table. It can do so at any time, and more than once. The
+    // client gets it with the next update, before that the effect wouldn't be drawn.
+    constexpr const char *kLaserEffect = "robot_point_beam";
+    constexpr int kPrecacheParticle_CallOffset = 7;
+    constexpr int kLaser_PrecacheWaitFrames = 30;
+    constexpr int kSplitScreen_AllUsers = -1;
+
+    using tCreatePingPointer = void (*)(void *player, const Vector &destination);
+    using tDestroyPingPointer = void (*)(void *player);
+    using tSetControlPoint = void (*)(void *effect, int point, const Vector &value);
+    using tSetDrawOnlyForSplitScreenUser = void (*)(void *effect, int slot);
+    using tPrecacheParticleSystem = int (*)(const char *name);
+    tCreatePingPointer CreatePingPointer = nullptr;
+    tDestroyPingPointer DestroyPingPointer = nullptr;
+    tSetControlPoint SetControlPoint = nullptr;
+    tSetDrawOnlyForSplitScreenUser SetDrawOnlyForSplitScreenUser = nullptr;
+    tPrecacheParticleSystem PrecacheParticleSystem = nullptr;
+    int g_PingEffectOffset = 0; // of the player
+
+    // The trace filter of the shot, built as at the start of TraceFirePortal: the constructor, then
+    // the list of classes the shot passes (physics objects, the player, ...). [3] SetPassEntity.
+    constexpr int kTraceFirePortal_FilterConstructorCallOffset = 0x46;
+    constexpr int kTraceFirePortal_FilterListCallOffset = 0x4F;
+    constexpr int kTraceFilter_SetPassEntity = 3;
+    constexpr size_t kTraceFilter_Size = 0x40;
+
+    using tTraceFilterConstructor = void (*)(void *filter, void *passEntity, int collisionGroup);
+    using tTraceFilterList = void (*)(void *filter);
+    tTraceFilterConstructor TraceFilterConstructor = nullptr;
+    tTraceFilterList TraceFilterList = nullptr;
+
+    // Ray_t of Strata Source (TraceFirePortal, engine's TraceRay): the SDK's plus the fields at the end.
+    struct alignas(16) AlignedVector
+    {
+        Vector value;
+        float pad;
+    };
+    struct StrataRay
+    {
+        AlignedVector start, delta, startOffset, extents;
+        const void *worldAxisTransform;
+        bool isRay, isSwept, unknown4A;
+        const void *unknown50;
+        float unknown58[3];
+    };
+    static_assert(offsetof(StrataRay, isRay) == 0x48 && offsetof(StrataRay, unknown58) == 0x58);
+
+    constexpr int kEngineTrace_TraceRay = 5;
+    constexpr unsigned int kShotMask = 0x2004003; // of TraceFirePortal
+    constexpr int kTrace_EndPosOffset = 0x0C;
+    constexpr size_t kTrace_Size = 0x100; // the game's is 0xA0
+
+    // Network fields: player m_hActiveWeapon, C_WeaponPortalgun m_bCanFirePortal1/2, m_iLastFiredPortal,
+    // m_bOpenProngs (set with the animation ACT_VM_PICKUP, which leads to the carrying one).
+    constexpr int kPlayer_ActiveWeaponHandle = 0x3868;
+    constexpr int kPortalgun_CanFirePortal1 = 0x3280;
+    constexpr int kPortalgun_CanFirePortal2 = 0x3281;
+    constexpr int kPortalgun_LastFiredPortal = 0x3284;
+    constexpr int kPortalgun_OpenProngs = 0x3288;
+    constexpr int kAimMode_Laser = 2;
+
+    void **g_PortalgunVTable = nullptr;
+
     Game *g_StrataGame = nullptr;
     void *g_ViewModelOwner = nullptr; // the player, as last seen by hkCalcViewModelView
 
-    // Where the viewmodel's muzzle was in the last rendered frame, for the shot. Read after
-    // rendering, as the server's code runs outside of it, where client bones may not be set up.
+    // Where the viewmodel's muzzle is in this frame, for the laser and the shot; the server's code
+    // runs outside of rendering, where client bones may not be set up.
     Vector g_Muzzle;
     bool g_MuzzleValid = false;
 
@@ -262,6 +355,13 @@ namespace
             oCalcViewModelLag(thisptr, origin, angles, originalAngles);
     }
 
+    // The gun stays in line with the controller and with the laser.
+    void hkAddViewmodelBob(void *thisptr, void *viewModel, Vector &origin, QAngle &angles)
+    {
+        if (!VRViewActive())
+            oAddViewmodelBob(thisptr, viewModel, origin, angles);
+    }
+
     // Where the viewmodel's muzzle is now. Only with the player hkCalcViewModelView has seen, as
     // GetClientEntity's result isn't verified to be the entity pointer on Strata Source.
     bool GetMuzzle(Vector &origin)
@@ -329,6 +429,107 @@ namespace
         return oDispatchParticleEffect(name, attachType, entity, attachment, reset, slot, filter);
     }
 
+    // The portal gun the player holds, nullptr if it's something else or the gun can't fire.
+    uint8_t *ActivePortalgun(uint8_t *player)
+    {
+        const uint32_t handle = *reinterpret_cast<uint32_t *>(player + kPlayer_ActiveWeaponHandle);
+        if (handle == 0xFFFFFFFF)
+            return nullptr;
+        auto weapon = reinterpret_cast<uint8_t *>(g_StrataGame->GetClientEntity(handle & 0xFFFF));
+        if (!weapon || *reinterpret_cast<void ***>(weapon) != g_PortalgunVTable)
+            return nullptr;
+        return weapon[kPortalgun_CanFirePortal1] || weapon[kPortalgun_CanFirePortal2] ? weapon : nullptr;
+    }
+
+    // Where a shot from the gun ends, with the same filter and mask as the shot.
+    Vector TraceShot(void *gun, const Vector &start, const Vector &direction)
+    {
+        static uint8_t *filter = []
+        {
+            alignas(16) static uint8_t buffer[kTraceFilter_Size];
+            TraceFilterConstructor(buffer, nullptr, 0);
+            TraceFilterList(buffer);
+            return buffer;
+        }();
+        CallVirtual<void>(filter, kTraceFilter_SetPassEntity, gun);
+
+        // Vector's constructor doesn't initialize it, so "= {}" wouldn't clear the ray.
+        StrataRay ray;
+        memset(&ray, 0, sizeof(ray));
+        ray.start.value = start;
+        ray.delta.value = direction * MAX_TRACE_LENGTH;
+        ray.isRay = true;
+        ray.isSwept = true;
+
+        alignas(16) uint8_t trace[kTrace_Size];
+        CallVirtual<void>(g_StrataGame->m_EngineTrace, kEngineTrace_TraceRay, &ray, kShotMask, filter, trace);
+        return *reinterpret_cast<Vector *>(trace + kTrace_EndPosOffset);
+    }
+
+    void RemoveLaser()
+    {
+        if (!CreatePingPointer)
+            return;
+        Game *game = g_StrataGame;
+        auto player = reinterpret_cast<uint8_t *>(game->GetClientEntity(game->m_EngineClient->GetLocalPlayer()));
+        if (player && player == g_ViewModelOwner && *reinterpret_cast<void **>(player + g_PingEffectOffset))
+            DestroyPingPointer(player);
+    }
+
+    // The aim laser runs from the muzzle to where the shot would land, in the color of the last portal.
+    void UpdateLaser()
+    {
+        VR *vr = g_StrataGame->m_VR;
+        if (!CreatePingPointer)
+            return;
+
+        auto player = static_cast<uint8_t *>(g_ViewModelOwner);
+        uint8_t *gun = g_MuzzleValid && vr->m_AimMode == kAimMode_Laser ? ActivePortalgun(player) : nullptr;
+        if (!gun)
+            return RemoveLaser();
+
+        const Vector aim = TraceShot(gun, g_Muzzle, vr->m_RightControllerForward);
+        void *effect = *reinterpret_cast<void **>(player + g_PingEffectOffset);
+        if (!effect)
+        {
+            static int waited = 0;
+            if (waited == 0)
+                PrecacheParticleSystem(kLaserEffect);
+            if (++waited < kLaser_PrecacheWaitFrames)
+                return;
+            waited = 0;
+
+            CreatePingPointer(player, aim);
+            effect = *reinterpret_cast<void **>(player + g_PingEffectOffset);
+            std::cout << "[VR] laser: " << (effect ? "created" : "not created") << ", muzzle " << g_Muzzle.x << "," << g_Muzzle.y << "," << g_Muzzle.z
+                      << " aim " << aim.x << "," << aim.y << "," << aim.z << "\n";
+            if (!effect)
+                return;
+            SetDrawOnlyForSplitScreenUser(effect, kSplitScreen_AllUsers);
+        }
+        SetControlPoint(effect, 1, aim);
+        const int lastPortal = std::clamp(*reinterpret_cast<int *>(gun + kPortalgun_LastFiredPortal), 0, 2);
+        SetControlPoint(effect, 2, g_StrataGame->m_singlePlayerPortalColors[lastPortal] * 0.5f);
+    }
+
+    // CalcViewModelView has already put the viewmodel in the hand for this frame.
+    void hkParticleSimulate(void *thisptr, float frameTime)
+    {
+        if (VRViewActive())
+        {
+            g_MuzzleValid = GetMuzzle(g_Muzzle);
+            UpdateLaser();
+
+            VR *vr = g_StrataGame->m_VR;
+            const uint8_t *gun = g_MuzzleValid ? ActivePortalgun(static_cast<uint8_t *>(g_ViewModelOwner)) : nullptr;
+            const bool carrying = gun && gun[kPortalgun_OpenProngs];
+            if (carrying != vr->m_ViewmodelCarrying)
+                std::cout << "[VR] gun carrying: " << carrying << "\n";
+            vr->m_ViewmodelCarrying = carrying;
+        }
+        oParticleSimulate(thisptr, frameTime);
+    }
+
     // Renders both eyes into the VR textures instead of the one view into the back buffer. Menus
     // (main menu with its background map, pause menu) keep rendering to the back buffer, which
     // the menu overlay shows.
@@ -336,7 +537,10 @@ namespace
     {
         VR *vr = g_StrataGame->m_VR;
         if (!vr->m_IsInitialized || !vr->m_IsVREnabled || vr->IsMenuVisible())
+        {
+            RemoveLaser();
             return oRenderView(thisptr, view, hudView, nClearFlags, whatToDraw);
+        }
 
         if (!vr->m_CreatedVRTextures)
             vr->CreateVRTextures();
@@ -390,8 +594,6 @@ namespace
         D3D11Hooks::TraceNote("right eye");
         renderEye(vr->m_VKRightEye, vr->GetViewOriginRight(position));
         D3D11Hooks::TraceNote("eyes done");
-
-        g_MuzzleValid = GetMuzzle(g_Muzzle);
 
         static bool logged = false;
         if (!logged)
@@ -509,7 +711,24 @@ bool StrataHooks::Init(Game *game)
     }
     ok &= InstallHook("FormatViewModelAttachment", formatAttachment, &hkFormatViewModelAttachment, oFormatViewModelAttachment);
 
+    g_PortalgunVTable = FindVTable("client.dll", "C_WeaponPortalgun");
+    if (!g_PortalgunVTable)
+    {
+        std::cout << "[Hooks] C_WeaponPortalgun vtable not found, the gun bobs and there is no aim laser\n";
+        return false;
+    }
+    ok &= InstallHook("AddViewmodelBob", g_PortalgunVTable[kPortalgun_AddViewmodelBob], &hkAddViewmodelBob, oAddViewmodelBob);
+
     auto client = reinterpret_cast<uint8_t *>(GetModuleHandleA("client.dll"));
+
+    uint8_t *simulateName = FindStringLea(client, kParticleSimulate_Name, 0x15);
+    uint8_t *particleSimulate = simulateName ? CallTarget(simulateName + kParticleSimulate_CallOffset) : nullptr;
+    if (!particleSimulate)
+    {
+        std::cout << "[Hooks] ParticleMgr()->Simulate not found, no muzzle position and no aim laser\n";
+        return false;
+    }
+    ok &= InstallHook("ParticleSimulate", particleSimulate, &hkParticleSimulate, oParticleSimulate);
 
     // Registration of the effect: lea r8, callback; lea rdx, "PortalBlast"
     uint8_t *blastName = FindStringLea(client, "PortalBlast", 0x15);
@@ -539,6 +758,25 @@ bool StrataHooks::Init(Game *game)
     }
     ok &= InstallHook("TraceFirePortal", traceClient, &hkTraceFirePortalClient, oTraceFirePortalClient);
     ok &= InstallHook("TraceFirePortal", traceServer, &hkTraceFirePortalServer, oTraceFirePortalServer, "server.dll");
+
+    // The laser is optional: without these functions there just isn't one.
+    uint8_t *warning = FindStringLea(client, kPingPointer_Warning, 0x0D);
+    uint8_t *ping = warning ? warning - kPingPointer_WarningOffset : nullptr;
+    if (ping && memcmp(ping, kPingPointer_Start, sizeof(kPingPointer_Start)) == 0
+        && memcmp(ping + kPingPointer_EffectLeaOffset, kPingPointer_EffectLea, sizeof(kPingPointer_EffectLea)) == 0)
+    {
+        g_PingEffectOffset = *reinterpret_cast<int32_t *>(ping + kPingPointer_EffectLeaOffset + sizeof(kPingPointer_EffectLea));
+        DestroyPingPointer = reinterpret_cast<tDestroyPingPointer>(CallTarget(ping + kPingPointer_DestroyCallOffset));
+        SetControlPoint = reinterpret_cast<tSetControlPoint>(CallTarget(ping + kPingPointer_SetControlPointCallOffset));
+        SetDrawOnlyForSplitScreenUser = reinterpret_cast<tSetDrawOnlyForSplitScreenUser>(CallTarget(ping + kPingPointer_SetDrawOnlyCallOffset));
+        uint8_t *effectName = FindStringLea(reinterpret_cast<uint8_t *>(GetModuleHandleA("server.dll")), kLaserEffect, 0x0D);
+        PrecacheParticleSystem = effectName ? reinterpret_cast<tPrecacheParticleSystem>(CallTarget(effectName + kPrecacheParticle_CallOffset)) : nullptr;
+        TraceFilterConstructor = reinterpret_cast<tTraceFilterConstructor>(CallTarget(traceClient + kTraceFirePortal_FilterConstructorCallOffset));
+        TraceFilterList = reinterpret_cast<tTraceFilterList>(CallTarget(traceClient + kTraceFirePortal_FilterListCallOffset));
+        if (DestroyPingPointer && SetControlPoint && SetDrawOnlyForSplitScreenUser && PrecacheParticleSystem && TraceFilterConstructor && TraceFilterList && game->m_EngineTrace)
+            CreatePingPointer = reinterpret_cast<tCreatePingPointer>(ping);
+    }
+    std::cout << "[Hooks] aim laser " << (CreatePingPointer ? "available" : "not found") << "\n";
 
     return ok;
 }

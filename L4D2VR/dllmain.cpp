@@ -156,6 +156,11 @@ static bool AddLaunchOptions()
         append("-height", "720");
     if (!hasAny({"-novid"}))
         append("-novid", nullptr);
+#ifdef L4D2VR_DIAGNOSTICS
+    // The game's console, in <game>\revolution\console.log.
+    if (!hasAny({"-condebug"}))
+        append("-condebug", nullptr);
+#endif
 
     static const char *const convars[][2] = {
         {"+mat_motion_blur_percent_of_screen_max", "0"},

@@ -105,6 +105,9 @@ public:
 
 	Vector m_ViewmodelPosCustomOffset; // Custom (from config) viewmodel position offset applied on top of hardcoded ones
     QAngle m_ViewmodelAngCustomOffset; // Custom (from config) viewmodel angle offset applied on top of hardcoded ones
+    bool m_ViewmodelCarrying = false; // The portal gun holds an object, set by the Strata hooks
+    float m_ViewmodelCarryWeight = 0.0f; // 0 = pose of the idle animation, 1 = of the carrying one
+    std::chrono::steady_clock::time_point m_ViewmodelCarryTime;
 
 	float m_Ipd;																	
 	float m_EyeZ;

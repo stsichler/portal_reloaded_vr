@@ -1508,11 +1508,27 @@ void VR::UpdateHandTracking()
     QAngle::VectorAngles(m_RightControllerForward, m_RightControllerUp, m_RightControllerAngAbs);
     m_RightControllerAngAbs.Normalize();
 
-    PositionAngle viewmodelOffset = PositionAngle{ {4.5, -1, 1.5}, {0,0,0} };
+    // The gun's visible axis in v_portalgun.mdl points 4.55 deg left and 5.01 deg up of the model's x
+    // axis in the idle animation (bone Base, its z axis plus 0.82 deg to the right for the mesh). The
+    // carrying animation turns and moves the gun further. So the gun is turned to bring that axis in
+    // line with the controller, around the hand: with the positions, for the config's position
+    // offset 8, 7.5, -12, the bone Base stays where the unturned {4.5, -1, 1.5} had it.
+    const PositionAngle viewmodelIdle{ {4.24f, -1.43f, 1.96f}, {-5.03f, -4.53f, 0} };
+    const PositionAngle viewmodelCarrying{ {3.34f, -4.14f, -2.0f}, {-9.52f, -7.64f, -24.61f} };
+
+    // About as long as the animations take to get there.
+    constexpr float carryBlendSeconds = 0.5f;
+    const auto now = std::chrono::steady_clock::now();
+    const float carryStep = std::chrono::duration<float>(now - m_ViewmodelCarryTime).count() / carryBlendSeconds;
+    m_ViewmodelCarryTime = now;
+    m_ViewmodelCarryWeight = std::clamp(m_ViewmodelCarryWeight + (m_ViewmodelCarrying ? carryStep : -carryStep), 0.0f, 1.0f);
+    const float w = m_ViewmodelCarryWeight;
 
     // Apply both hardcoded and custom (from config) viewmodel offsets here:
-    m_ViewmodelPosOffset = viewmodelOffset.position + m_ViewmodelPosCustomOffset;
-    m_ViewmodelAngOffset = viewmodelOffset.angle + m_ViewmodelAngCustomOffset;
+    m_ViewmodelPosOffset = viewmodelIdle.position + (viewmodelCarrying.position - viewmodelIdle.position) * w + m_ViewmodelPosCustomOffset;
+    m_ViewmodelAngOffset.x = viewmodelIdle.angle.x + (viewmodelCarrying.angle.x - viewmodelIdle.angle.x) * w + m_ViewmodelAngCustomOffset.x;
+    m_ViewmodelAngOffset.y = viewmodelIdle.angle.y + (viewmodelCarrying.angle.y - viewmodelIdle.angle.y) * w + m_ViewmodelAngCustomOffset.y;
+    m_ViewmodelAngOffset.z = viewmodelIdle.angle.z + (viewmodelCarrying.angle.z - viewmodelIdle.angle.z) * w + m_ViewmodelAngCustomOffset.z;
 
     m_ViewmodelForward = m_RightControllerForward;
     m_ViewmodelUp = m_RightControllerUp;
