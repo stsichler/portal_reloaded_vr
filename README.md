@@ -5,9 +5,11 @@
   </p>
 </div>
 
-# ![Portal 2 icon](imgs/icon.jpg "Portal 2 icon") Portal Revolution VR Mod - **CURRENTLY NOT WORKING!**
+# Portal Revolution VR Mod - **CURRENTLY NOT WORKING!**
 
 # *** HELP NEEDED! ***
+
+[<img src="https://www.paypalobjects.com/en_US/DK/i/btn/btn_donateCC_LG.gif" align="right" />](https://www.paypal.com/donate/?hosted_button_id=HLFSYXSE3SDVE)
 
 This Repo is intended as a **starting point** for implementation of a VR Mod for Portal Revolution. Feel free to contribute!
 
