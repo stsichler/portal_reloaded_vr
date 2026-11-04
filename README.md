@@ -5,7 +5,7 @@
   </p>
 </div>
 
-# ![Portal 2 icon](imgs/icon.jpg "Portal 2 icon") Portal Reloaded VR
+# Portal Reloaded VR Mod
 ### ~~Use this mod at your own risk of getting VAC banned. Use the -insecure launch option to help protect yourself.~~
 ### Apparently Portal Reloaded doesn't have VAC, but just to be safe you should still run the game with the `insecure` flag.
 This game contains flashing lights and fast motion sequences.
