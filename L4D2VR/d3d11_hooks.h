@@ -21,8 +21,6 @@ namespace D3D11Hooks
     // Before/after ID3D11Device::CreateTexture2D.
     extern std::function<void(D3D11_TEXTURE2D_DESC &desc)> CreateTexture2D_Pre_Callback;
     extern std::function<void(ID3D11Texture2D *texture, const D3D11_TEXTURE2D_DESC &desc)> CreateTexture2D_Post_Callback;
-    // ID3D11DeviceContext::RSSetViewports of the immediate context: may change the viewports.
-    extern std::function<void(UINT count, D3D11_VIEWPORT *viewports)> SetViewports_Callback;
     // Before and after IDXGISwapChain::Present/Present1.
     extern std::function<void(IDXGISwapChain *swapChain)> Present_Pre_Callback;
     extern std::function<void(IDXGISwapChain *swapChain)> Present_Post_Callback;

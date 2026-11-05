@@ -328,55 +328,8 @@ void VR::initD3D11Callbacks()
                       << " format=" << desc.Format << "\n";
         };
 
-    D3D11Hooks::SetViewports_Callback = [this](UINT count, D3D11_VIEWPORT *viewports)
-        {
-            // While a menu is shown, the whole back buffer goes to the overlay. Strata Source draws
-            // the menu over the whole back buffer, but the scene behind it (background map) with
-            // a viewport of the window size: stretch that one too. Only viewports of the window
-            // size at 0,0 into the back buffer; render targets (shadow maps etc.) stay as they are
-            // (the D3D9 version stretched every viewport, which messed up the shadows).
-            if (!m_IsInitialized || !IsMenuVisible())
-                return;
-
-            D3D11_VIEWPORT &vp = viewports[0];
-            if (vp.TopLeftX != 0 || vp.TopLeftY != 0 || (int)vp.Width != m_WindowWidth || (int)vp.Height != m_WindowHeight)
-                return;
-
-            ID3D11RenderTargetView *rtv = nullptr;
-            D3D11Hooks::g_Context->OMGetRenderTargets(1, &rtv, nullptr);
-            if (!rtv)
-                return;
-            ID3D11Resource *target = nullptr;
-            rtv->GetResource(&target);
-            rtv->Release();
-            ID3D11Texture2D *backBuffer = nullptr;
-            D3D11Hooks::g_SwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer);
-            const bool intoBackBuffer = target && target == backBuffer;
-            if (target)
-                target->Release();
-            if (backBuffer)
-                backBuffer->Release();
-            if (!intoBackBuffer)
-                return;
-
-            static bool logged = false;
-            if (!logged)
-            {
-                std::cout << "[VR] menu: stretching the scene viewport " << m_WindowWidth << "x" << m_WindowHeight
-                          << " to the back buffer " << m_RenderWidth << "x" << m_RenderHeight << "\n";
-                logged = true;
-            }
-            vp.Width = (float)m_RenderWidth;
-            vp.Height = (float)m_RenderHeight;
-        };
-
     D3D11Hooks::Present_Pre_Callback = [this](IDXGISwapChain *swapChain)
         {
-            int windowWidth, windowHeight;
-            GetWindowSize(windowWidth, windowHeight);
-            m_WindowWidth = windowWidth; // for the viewport callback, which runs many times per frame
-            m_WindowHeight = windowHeight;
-
             if (m_IsInitialized)
                 CopyBackBuffer(swapChain);
         };

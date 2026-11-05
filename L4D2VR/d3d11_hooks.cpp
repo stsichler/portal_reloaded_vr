@@ -15,7 +15,6 @@ namespace D3D11Hooks
     std::function<void(UINT &width, UINT &height)> SwapChainSize_Callback;
     std::function<void(D3D11_TEXTURE2D_DESC &desc)> CreateTexture2D_Pre_Callback;
     std::function<void(ID3D11Texture2D *texture, const D3D11_TEXTURE2D_DESC &desc)> CreateTexture2D_Post_Callback;
-    std::function<void(UINT count, D3D11_VIEWPORT *viewports)> SetViewports_Callback;
     std::function<void(IDXGISwapChain *swapChain)> Present_Pre_Callback;
     std::function<void(IDXGISwapChain *swapChain)> Present_Post_Callback;
 }
@@ -449,23 +448,16 @@ namespace
 
     void STDMETHODCALLTYPE hkRSSetViewports(ID3D11DeviceContext *context, UINT count, const D3D11_VIEWPORT *viewports)
     {
-        if (context != g_Context || !viewports || count == 0 || count > D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE
-            || !SetViewports_Callback)
-            return oRSSetViewports(context, count, viewports);
-
-        D3D11_VIEWPORT newViewports[D3D11_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE];
-        memcpy(newViewports, viewports, count * sizeof(D3D11_VIEWPORT));
-        SetViewports_Callback(count, newViewports);
 #ifdef L4D2VR_DIAGNOSTICS
-        if (TraceActive(context) && memcmp(&newViewports[0], &g_TraceViewport, sizeof(D3D11_VIEWPORT)))
+        if (TraceActive(context) && viewports && count > 0 && memcmp(&viewports[0], &g_TraceViewport, sizeof(D3D11_VIEWPORT)))
         {
-            g_TraceViewport = newViewports[0];
+            g_TraceViewport = viewports[0];
             TraceFlushDraws();
             g_TraceFile << "  viewport " << g_TraceViewport.TopLeftX << "," << g_TraceViewport.TopLeftY << " "
                         << g_TraceViewport.Width << "x" << g_TraceViewport.Height << "\n";
         }
 #endif
-        oRSSetViewports(context, count, newViewports);
+        oRSSetViewports(context, count, viewports);
     }
 
     HRESULT STDMETHODCALLTYPE hkResizeBuffers(IDXGISwapChain *swapChain, UINT bufferCount, UINT width, UINT height,
