@@ -165,6 +165,7 @@ namespace
     constexpr int kEngineTrace_TraceRay = 5;
     constexpr unsigned int kShotMask = 0x2004003; // of TraceFirePortal
     constexpr int kTrace_EndPosOffset = 0x0C;
+    constexpr int kTrace_FractionOffset = 0x2C;
     constexpr size_t kTrace_Size = 0x100; // the game's is 0xA0
 
     // Network fields: player m_hActiveWeapon, C_WeaponPortalgun m_bCanFirePortal1/2, m_iLastFiredPortal,
@@ -185,6 +186,9 @@ namespace
     // runs outside of rendering, where client bones may not be set up.
     Vector g_Muzzle;
     bool g_MuzzleValid = false;
+
+    Vector g_EyePosition; // of the player in the game, as last seen by hkCalcViewModelView
+    Vector g_ShotStart; // where the shot starts, see UpdateShotStart
 
     // The eyes are rendered and the viewmodel is in the hand.
     bool VRViewActive()
@@ -330,6 +334,7 @@ namespace
     void hkCalcViewModelView(void *thisptr, void *owner, const Vector &eyePosition, const QAngle &eyeAngles)
     {
         g_ViewModelOwner = owner;
+        g_EyePosition = eyePosition;
         if (!VRViewActive())
             return oCalcViewModelView(thisptr, owner, eyePosition, eyeAngles);
 
@@ -406,7 +411,7 @@ namespace
             return original(thisptr, start, direction, portal2, placedBy, result, test);
 
         VR *vr = g_StrataGame->m_VR;
-        const Vector gunStart = g_MuzzleValid ? g_Muzzle : vr->GetRightControllerAbsPos();
+        const Vector gunStart = g_MuzzleValid ? g_ShotStart : vr->GetRightControllerAbsPos();
         return original(thisptr, gunStart, vr->m_RightControllerForward, portal2, placedBy, result, test);
     }
 
@@ -441,8 +446,14 @@ namespace
         return weapon[kPortalgun_CanFirePortal1] || weapon[kPortalgun_CanFirePortal2] ? weapon : nullptr;
     }
 
-    // Where a shot from the gun ends, with the same filter and mask as the shot.
-    Vector TraceShot(void *gun, const Vector &start, const Vector &direction)
+    struct ShotTrace
+    {
+        Vector end;
+        float fraction;
+    };
+
+    // How far a shot from the gun gets along delta, with the same filter and mask as the shot.
+    ShotTrace TraceShot(void *gun, const Vector &start, const Vector &delta)
     {
         static uint8_t *filter = []
         {
@@ -457,13 +468,29 @@ namespace
         StrataRay ray;
         memset(&ray, 0, sizeof(ray));
         ray.start.value = start;
-        ray.delta.value = direction * MAX_TRACE_LENGTH;
+        ray.delta.value = delta;
         ray.isRay = true;
         ray.isSwept = true;
 
         alignas(16) uint8_t trace[kTrace_Size];
         CallVirtual<void>(g_StrataGame->m_EngineTrace, kEngineTrace_TraceRay, &ray, kShotMask, filter, trace);
-        return *reinterpret_cast<Vector *>(trace + kTrace_EndPosOffset);
+        return { *reinterpret_cast<Vector *>(trace + kTrace_EndPosOffset), *reinterpret_cast<float *>(trace + kTrace_FractionOffset) };
+    }
+
+    // The hand can reach through a wall. If something is between the player's eyes in the game and
+    // the muzzle, the shot starts at the eyes, so that it can't land behind the wall.
+    void UpdateShotStart()
+    {
+        g_ShotStart = g_Muzzle;
+        uint8_t *gun = g_MuzzleValid && CreatePingPointer ? ActivePortalgun(static_cast<uint8_t *>(g_ViewModelOwner)) : nullptr;
+        const bool blocked = gun && TraceShot(gun, g_EyePosition, g_Muzzle - g_EyePosition).fraction < 1.0f;
+        if (blocked)
+            g_ShotStart = g_EyePosition;
+
+        static bool wasBlocked = false;
+        if (blocked != wasBlocked)
+            std::cout << "[VR] shot starts at the " << (blocked ? "eyes" : "muzzle") << "\n";
+        wasBlocked = blocked;
     }
 
     void RemoveLaser()
@@ -488,7 +515,7 @@ namespace
         if (!gun)
             return RemoveLaser();
 
-        const Vector aim = TraceShot(gun, g_Muzzle, vr->m_RightControllerForward);
+        const Vector aim = TraceShot(gun, g_ShotStart, vr->m_RightControllerForward * MAX_TRACE_LENGTH).end;
         void *effect = *reinterpret_cast<void **>(player + g_PingEffectOffset);
         if (!effect)
         {
@@ -518,6 +545,7 @@ namespace
         if (VRViewActive())
         {
             g_MuzzleValid = GetMuzzle(g_Muzzle);
+            UpdateShotStart();
             UpdateLaser();
 
             VR *vr = g_StrataGame->m_VR;
