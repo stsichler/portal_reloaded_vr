@@ -567,24 +567,15 @@ void VR::SubmitVRTextures()
 
         vr::VRTextureBounds_t bounds{ 0, 0, 1, 1 };
         const bool menuVisible = IsMenuVisible();
-        int windowWidth, windowHeight;
-        GetWindowSize(windowWidth, windowHeight);
         if (!menuVisible)
         {
             // The game view only renders to the window portion of the back buffer (Strata Source
             // draws its menus over the whole back buffer). Until we figure out a proper fix,
-            // as a workaround only show that portion of the texture. Its texels are square.
+            // as a workaround only show that portion of the texture.
+            int windowWidth, windowHeight;
+            GetWindowSize(windowWidth, windowHeight);
             bounds.uMax = (float)windowWidth / m_RenderWidth;
             bounds.vMax = (float)windowHeight / m_RenderHeight;
-            vr::VROverlay()->SetOverlayTexelAspect(m_MainMenuHandle, 1.0f);
-        }
-        else
-        {
-            // The menu is laid out for the window but stretched over the whole back buffer:
-            // texels wider than tall bring it back to the window's aspect ratio.
-            const float windowAspect = (float)windowWidth / windowHeight;
-            const float backBufferAspect = (float)m_VKBackBuffer.m_Width / m_VKBackBuffer.m_Height;
-            vr::VROverlay()->SetOverlayTexelAspect(m_MainMenuHandle, windowAspect / backBufferAspect);
         }
 
         vr::VROverlay()->SetOverlayTextureBounds(m_MainMenuHandle, &bounds);
@@ -670,8 +661,8 @@ void VR::RepositionOverlays()
 
     // Main menu overlay: 3 m in front of the HMD, turned towards it (yaw only). A rigid
     // transform: the overlay's size comes from SetOverlayWidthInMeters, its aspect ratio from
-    // the texel aspect set in SubmitVRTextures. (The D3D9 version scaled this matrix instead,
-    // so the visible area and ComputeOverlayIntersection didn't match: no laser in the menu.)
+    // the texture. (The D3D9 version scaled this matrix instead, so the visible area and
+    // ComputeOverlayIntersection didn't match: no laser in the menu.)
     Vector menuNewPos = hmdForward * 3 + hmdPosition;
     float hmdYaw = atan2f(hmdMat.m[0][2], hmdMat.m[2][2]);
 
@@ -682,11 +673,10 @@ void VR::RepositionOverlays()
         -sinf(hmdYaw), 0.0f, cosf(hmdYaw), menuNewPos.z
     };
 
-    int windowWidth, windowHeight;
-    GetWindowSize(windowWidth, windowHeight);
-    const float menuHeight = 1.5f; // meters
+    // Panorama lays the menu out for the back buffer (HMD format, nearly square).
+    const float menuHeight = 2.0f; // meters
     vr::VROverlay()->SetOverlayTransformAbsolute(m_MainMenuHandle, trackingOrigin, &menuTransform);
-    vr::VROverlay()->SetOverlayWidthInMeters(m_MainMenuHandle, menuHeight * windowWidth / windowHeight);
+    vr::VROverlay()->SetOverlayWidthInMeters(m_MainMenuHandle, menuHeight * m_RenderWidth / m_RenderHeight);
 
     // Reposition HUD overlay
     /*vr::HmdMatrix34_t hudTransform =

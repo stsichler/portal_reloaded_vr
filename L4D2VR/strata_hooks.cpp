@@ -558,6 +558,26 @@ namespace
         oParticleSimulate(thisptr, frameTime);
     }
 
+    // Panorama lays the menu out for the back buffer, and the overlay shows that with its proportions.
+    // So the scene behind the menu gets the same format, with the view's vertical field of view.
+    CViewSetup MenuView(const CViewSetup &view)
+    {
+        VR *vr = g_StrataGame->m_VR;
+        const float aspect = static_cast<float>(vr->m_RenderWidth) / vr->m_RenderHeight;
+        const float scale = aspect / view.m_flAspectRatio;
+        auto scaleFov = [scale](float fov) { return RAD2DEG(2.0f * atanf(tanf(DEG2RAD(fov) * 0.5f) * scale)); };
+
+        CViewSetup menuView = view;
+        menuView.x = menuView.m_nUnscaledX = 0;
+        menuView.y = menuView.m_nUnscaledY = 0;
+        menuView.width = menuView.m_nUnscaledWidth = vr->m_RenderWidth;
+        menuView.height = menuView.m_nUnscaledHeight = vr->m_RenderHeight;
+        menuView.fov = scaleFov(view.fov);
+        menuView.fovViewmodel = scaleFov(view.fovViewmodel);
+        menuView.m_flAspectRatio = aspect;
+        return menuView;
+    }
+
     // Renders both eyes into the VR textures instead of the one view into the back buffer. Menus
     // (main menu with its background map, pause menu) keep rendering to the back buffer, which
     // the menu overlay shows.
@@ -567,6 +587,9 @@ namespace
         if (!vr->m_IsInitialized || !vr->m_IsVREnabled || vr->IsMenuVisible())
         {
             RemoveLaser();
+            D3D11Hooks::TraceNote("flat view");
+            if (vr->m_IsInitialized && vr->IsMenuVisible())
+                return oRenderView(thisptr, MenuView(view), hudView, nClearFlags, whatToDraw);
             return oRenderView(thisptr, view, hudView, nClearFlags, whatToDraw);
         }
 

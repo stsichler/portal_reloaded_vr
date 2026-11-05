@@ -106,7 +106,9 @@ namespace
     }
 
 #ifdef L4D2VR_DIAGNOSTICS
-    // Diagnostic frame trace: F11 writes the D3D11 calls of the next frame to l4d2vr_frame_N.txt.
+    // Diagnostic frame trace: F11 writes the D3D11 calls of the next frames to l4d2vr_frame_N.txt and
+    // what each of them presents to l4d2vr_frame_N_K.bmp.
+    constexpr int kTraceFrames = 3;
     constexpr int kContext_PSSetShaderResources = 8;
     constexpr int kContext_DrawIndexed = 12;
     constexpr int kContext_Draw = 13;
@@ -151,6 +153,7 @@ namespace
 
     bool g_Trace = false;
     int g_TraceIndex = 0;
+    int g_TraceFrame = 0;
     std::ofstream g_TraceFile;
     unsigned g_TraceDraws = 0;
     ID3D11DepthStencilState *g_TraceDepthState = nullptr;
@@ -195,6 +198,16 @@ namespace
         return name;
     }
 
+    std::string TraceBackBufferName(IDXGISwapChain *swapChain)
+    {
+        ID3D11Texture2D *backBuffer = nullptr;
+        if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer)))
+            return "?";
+        std::string name = TraceResourceName(backBuffer);
+        backBuffer->Release();
+        return name;
+    }
+
     std::string TraceViewName(ID3D11View *view)
     {
         if (!view)
@@ -218,15 +231,62 @@ namespace
         g_TraceStencilRef = 0;
         g_TraceViewport = {};
         g_TraceScissor = {};
+        g_TraceFrame = 0;
         g_Trace = true;
-        std::cout << "[D3D11] tracing one frame to " << fileName << "\n";
+        std::cout << "[D3D11] tracing " << kTraceFrames << " frames to " << fileName << "\n";
     }
 
-    void TraceEnd()
+    // Writes the back buffer as a bitmap. Assumes 32 bits per pixel, BGRA.
+    void TraceScreenshot(IDXGISwapChain *swapChain, const std::string &fileName)
+    {
+        ID3D11Texture2D *backBuffer = nullptr;
+        if (FAILED(swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void **)&backBuffer)))
+            return;
+        D3D11_TEXTURE2D_DESC desc;
+        backBuffer->GetDesc(&desc);
+        desc.Usage = D3D11_USAGE_STAGING;
+        desc.BindFlags = 0;
+        desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        desc.MiscFlags = 0;
+        ID3D11Texture2D *staging = nullptr;
+        if (desc.SampleDesc.Count == 1 && SUCCEEDED(g_Device->CreateTexture2D(&desc, nullptr, &staging)))
+        {
+            g_Context->CopyResource(staging, backBuffer);
+            D3D11_MAPPED_SUBRESOURCE mapped;
+            if (SUCCEEDED(g_Context->Map(staging, 0, D3D11_MAP_READ, 0, &mapped)))
+            {
+                BITMAPINFOHEADER info = {};
+                info.biSize = sizeof(info);
+                info.biWidth = desc.Width;
+                info.biHeight = -static_cast<LONG>(desc.Height); // top-down
+                info.biPlanes = 1;
+                info.biBitCount = 32;
+                info.biCompression = BI_RGB;
+                BITMAPFILEHEADER file = {};
+                file.bfType = 0x4D42;
+                file.bfOffBits = sizeof(file) + sizeof(info);
+                file.bfSize = file.bfOffBits + desc.Width * 4 * desc.Height;
+                std::ofstream bitmap(fileName, std::ios::binary);
+                bitmap.write(reinterpret_cast<const char *>(&file), sizeof(file));
+                bitmap.write(reinterpret_cast<const char *>(&info), sizeof(info));
+                for (UINT y = 0; y < desc.Height; ++y)
+                    bitmap.write(static_cast<const char *>(mapped.pData) + y * mapped.RowPitch, desc.Width * 4);
+                g_Context->Unmap(staging, 0);
+            }
+            staging->Release();
+        }
+        backBuffer->Release();
+    }
+
+    void TraceEnd(IDXGISwapChain *swapChain)
     {
         if (!g_Trace)
             return;
         TraceFlushDraws();
+        g_TraceFile << "=== present " << g_TraceFrame << " of back buffer " << TraceBackBufferName(swapChain) << "\n";
+        TraceScreenshot(swapChain, "l4d2vr_frame_" + std::to_string(g_TraceIndex) + "_" + std::to_string(g_TraceFrame) + ".bmp");
+        if (++g_TraceFrame < kTraceFrames)
+            return;
         g_TraceFile.close();
         g_Trace = false;
     }
@@ -384,7 +444,7 @@ namespace
     }
 #else
     void TraceStart() {}
-    void TraceEnd() {}
+    void TraceEnd(IDXGISwapChain *) {}
 #endif
 
     void STDMETHODCALLTYPE hkRSSetViewports(ID3D11DeviceContext *context, UINT count, const D3D11_VIEWPORT *viewports)
@@ -422,7 +482,7 @@ namespace
         const bool handle = swapChain == g_SwapChain && t_PresentDepth == 0 && !(flags & DXGI_PRESENT_TEST);
         ++t_PresentDepth;
         if (handle)
-            TraceEnd();
+            TraceEnd(swapChain);
         if (handle && Present_Pre_Callback)
             Present_Pre_Callback(swapChain);
         HRESULT hr = oPresent(swapChain, syncInterval, flags);
@@ -440,7 +500,7 @@ namespace
         const bool handle = swapChain == g_SwapChain && t_PresentDepth == 0 && !(flags & DXGI_PRESENT_TEST);
         ++t_PresentDepth;
         if (handle)
-            TraceEnd();
+            TraceEnd(swapChain);
         if (handle && Present_Pre_Callback)
             Present_Pre_Callback(swapChain);
         HRESULT hr = oPresent1(swapChain, syncInterval, flags, parameters);
